@@ -99,20 +99,22 @@ export const App: React.FC = () => {
         <header className="h-16 border-b border-slate-900 px-6 flex items-center justify-between flex-shrink-0 bg-slate-950">
           {activeSession && !showCreator ? (
             <div className="flex items-center gap-3 pl-10 lg:pl-0 animate-fadeIn min-w-0 flex-1 mr-4">
-              <h2 className="text-sm md:text-base font-bold font-outfit text-slate-100 truncate max-w-[120px] sm:max-w-[180px] md:max-w-[240px]" title={activeSession.company_name}>
-                {activeSession.company_name}
+              <h2 className="text-sm md:text-base font-bold font-outfit text-slate-100 truncate max-w-[120px] sm:max-w-[180px] md:max-w-[240px]" title={activeSession.company_name || 'Loading...'}>
+                {activeSession.company_name }
               </h2>
-              <a 
-                href={activeSession.website} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-900 border border-slate-850 hover:border-slate-800 hover:bg-slate-850 rounded-lg text-[10px] text-blue-400 hover:text-blue-300 font-medium transition min-w-0 max-w-[120px] sm:max-w-[180px]"
-                title={activeSession.website}
-              >
-                <Globe size={11} className="text-slate-500 flex-shrink-0" />
-                <span className="truncate">{activeSession.website.replace(/^https?:\/\/(www\.)?/, '')}</span>
-                <ExternalLink size={9} className="text-slate-500 flex-shrink-0" />
-              </a>
+              {activeSession.website && (
+                <a 
+                  href={activeSession.website} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-900 border border-slate-850 hover:border-slate-800 hover:bg-slate-850 rounded-lg text-[10px] text-blue-400 hover:text-blue-300 font-medium transition min-w-0 max-w-[120px] sm:max-w-[180px]"
+                  title={activeSession.website}
+                >
+                  <Globe size={11} className="text-slate-500 flex-shrink-0" />
+                  <span className="truncate">{activeSession.website.replace(/^https?:\/\/(www\.)?/, '')}</span>
+                  <ExternalLink size={9} className="text-slate-500 flex-shrink-0" />
+                </a>
+              )}
               <div className={`flex items-center gap-1.5 text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-md font-semibold border flex-shrink-0 ${
                 activeSession.status === 'done' ? 'bg-emerald-950/20 text-emerald-400 border-emerald-500/20' :
                 activeSession.status === 'running' ? 'bg-blue-950/20 text-blue-400 border-blue-500/20' :

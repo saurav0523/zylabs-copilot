@@ -1,7 +1,7 @@
 from datetime import datetime
 import structlog
 from backend.workflow.state import GraphState
-from backend.services.llm import llm_service
+from backend.services.llm import llm_service, MODEL_ANALYST
 from backend.services.websocket_manager import ws_manager
 
 logger = structlog.get_logger()
@@ -71,7 +71,7 @@ async def analyst_node(state: GraphState) -> GraphState:
         })
         
         # Call LLM
-        analysis = await llm_service.generate_json(system_prompt, user_prompt, expected_keys=expected_keys)
+        analysis = await llm_service.generate_json(system_prompt, user_prompt, model=MODEL_ANALYST, expected_keys=expected_keys)
         
         signals_count = len(analysis.get("business_signals", []))
         # Emit final progress event

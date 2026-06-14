@@ -6,7 +6,6 @@ from pydantic import Field
 
 request_id_var: ContextVar[str] = ContextVar("request_id", default="")
 
-
 class Settings(BaseSettings):
     DATABASE_URL: str = Field(default="postgresql+asyncpg://postgres:postgres@localhost:5432/zylabs")
     REDIS_URL: str = Field(default="redis://localhost:6379/0")
@@ -17,6 +16,15 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: Optional[str] = Field(default=None)
     OPENAI_API_KEY: Optional[str] = Field(default=None)
     GEMINI_API_KEY: Optional[str] = Field(default=None)
+    
+    OPENROUTER_API_KEY: str = Field(default="")
+    OPENROUTER_PRIMARY_MODEL: str = Field(default="openrouter/free")
+    OPENROUTER_FALLBACK_MODEL: str = Field(default="openrouter/free")
+    NODE_MODEL_PLANNER:  str = Field(default="openrouter/free")
+    NODE_MODEL_ANALYST:  str = Field(default="openrouter/free")
+    NODE_MODEL_QA:       str = Field(default="openrouter/free")
+    NODE_MODEL_REPORTER: str = Field(default="openrouter/free")
+    NODE_MODEL_CHAT:     str = Field(default="openrouter/free")
     
     LOG_LEVEL: str = Field(default="INFO")
     MAX_RETRY_COUNT: int = Field(default=2)

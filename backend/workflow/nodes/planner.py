@@ -1,7 +1,7 @@
 from datetime import datetime
 import structlog
 from backend.workflow.state import GraphState
-from backend.services.llm import llm_service
+from backend.services.llm import llm_service, MODEL_PLANNER
 from backend.services.websocket_manager import ws_manager
 
 logger = structlog.get_logger()
@@ -51,7 +51,7 @@ async def planner_node(state: GraphState) -> GraphState:
         )
         
         # Call LLM
-        result = await llm_service.generate_json(system_prompt, user_prompt, expected_keys=["targets"])
+        result = await llm_service.generate_json(system_prompt, user_prompt, model=MODEL_PLANNER, expected_keys=["targets"])
         targets = result.get("targets", [website])
         
         # Ensure the base website is always in the targets list

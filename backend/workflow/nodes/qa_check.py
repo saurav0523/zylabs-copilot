@@ -3,7 +3,7 @@ from datetime import datetime
 import structlog
 from backend.config import settings
 from backend.workflow.state import GraphState
-from backend.services.llm import llm_service
+from backend.services.llm import llm_service, MODEL_QA
 from backend.services.websocket_manager import ws_manager
 
 logger = structlog.get_logger()
@@ -53,7 +53,7 @@ async def qa_check_node(state: GraphState) -> GraphState:
         )
         
         # Call LLM
-        result = await llm_service.generate_json(system_prompt, user_prompt, expected_keys=["quality_score", "feedback"])
+        result = await llm_service.generate_json(system_prompt, user_prompt, model=MODEL_QA, expected_keys=["quality_score", "feedback"])
         quality_score = float(result.get("quality_score", 0.8))
         feedback = result.get("feedback", "No feedback provided.")
         

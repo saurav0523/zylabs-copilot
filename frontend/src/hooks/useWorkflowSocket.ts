@@ -2,97 +2,107 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSessionStore } from '../store/sessionStore';
 import type { WorkflowEvent } from '../types';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const WS_URL  = import.meta.env.VITE_WS_URL  || API_URL;
+
+/** Build a clean WebSocket base URL from any scheme (http/https/ws/wss). */
+function resolveWsBase(raw: string): string {
+  const isTls = /^(https|wss):\/\//i.test(raw);
+  const scheme = isTls ? 'wss' : 'ws';
+  const host = raw.replace(/^(https?|wss?):\/\//i, '');
+  return `${scheme}://${host}`;
+}
+
+const WS_BASE = resolveWsBase(WS_URL);
 
 export function useWorkflowSocket(sessionId: string | null) {
-  const socketRef = useRef<WebSocket | null>(null);
-  const addWorkflowEvent = useSessionStore((state) => state.addWorkflowEvent);
-  const updateSessionStatus = useSessionStore((state) => state.updateSessionStatus);
+  // ── Hooks declared in a fixed, unconditional order ──────────────────────────
+  const socketRef         = useRef<WebSocket | null>(null);
+  const addWorkflowEvent  = useSessionStore((s) => s.addWorkflowEvent);
+  const updateSessionStatus = useSessionStore((s) => s.updateSessionStatus);
   const [connected, setConnected] = useState(false);
-  const reconnectTimeoutRef = useRef<number | null>(null);
-  const reconnectDelayRef = useRef(1000); // Start reconnect delay at 1s
-  const manualCloseRef = useRef(false);
+  const reconnectTimerRef = useRef<number | null>(null);
+  const reconnectDelayRef = useRef(1000);
+  const manualCloseRef    = useRef(false);
 
   const connect = useCallback(() => {
     if (!sessionId) return;
-    
-    // Reset manual close
+
+    // Guard: skip if socket is already CONNECTING or OPEN (React StrictMode fix)
+    const sock = socketRef.current;
+    if (sock && (sock.readyState === WebSocket.CONNECTING || sock.readyState === WebSocket.OPEN)) {
+      return;
+    }
+
     manualCloseRef.current = false;
-    
-    // Map HTTP scheme to WS scheme automatically
-    const wsScheme = WS_URL.startsWith('https') ? 'wss' : 'ws';
-    const wsHost = WS_URL.replace(/^https?:\/\//, '');
-    const wsUrl = `${wsScheme}://${wsHost}/ws/session/${sessionId}`;
-    
+
+    const wsUrl = `${WS_BASE}/ws/session/${sessionId}`;
     const ws = new WebSocket(wsUrl);
     socketRef.current = ws;
 
     ws.onopen = () => {
       setConnected(true);
-      reconnectDelayRef.current = 1000; // Reset delay on successful connection
-      console.log('WebSocket connection opened for session', sessionId);
+      reconnectDelayRef.current = 1000;
+      console.log('[WS] connected →', sessionId);
     };
 
     ws.onmessage = (event) => {
       try {
-        const parsedEvent: WorkflowEvent = JSON.parse(event.data);
-        addWorkflowEvent(parsedEvent);
+        const parsed: WorkflowEvent = JSON.parse(event.data);
+        addWorkflowEvent(parsed);
 
-        if (parsedEvent.event === 'workflow_complete') {
+        if (parsed.event === 'workflow_complete') {
           updateSessionStatus(sessionId, 'done');
-          manualCloseRef.current = true; // prevent reconnect since workflow completed
+          manualCloseRef.current = true;
           ws.close();
-        } else if (parsedEvent.event === 'error') {
+        } else if (parsed.event === 'error') {
           updateSessionStatus(sessionId, 'failed');
-          manualCloseRef.current = true; // prevent reconnect since workflow failed
+          manualCloseRef.current = true;
           ws.close();
         }
       } catch (err) {
-        console.error('Failed to parse WebSocket event payload', err);
+        console.error('[WS] failed to parse event', err);
       }
     };
 
     ws.onclose = () => {
       setConnected(false);
-      console.log('WebSocket connection closed');
-      
-      // Auto-reconnect if it was not closed manually or on success/error
+      console.log('[WS] closed');
       if (!manualCloseRef.current) {
         const delay = reconnectDelayRef.current;
-        console.log(`Reconnecting to WebSocket in ${delay}ms...`);
-        reconnectTimeoutRef.current = window.setTimeout(() => {
-          reconnectDelayRef.current = Math.min(delay * 2, 30000); // Max backoff 30s
+        console.log(`[WS] reconnecting in ${delay}ms…`);
+        reconnectTimerRef.current = window.setTimeout(() => {
+          reconnectDelayRef.current = Math.min(delay * 2, 30_000);
           connect();
         }, delay);
       }
     };
 
-    ws.onerror = (err) => {
-      console.error('WebSocket encountered an error', err);
-    };
+    // onerror always fires before onclose — no need to log both
+    ws.onerror = () => {};
+
   }, [sessionId, addWorkflowEvent, updateSessionStatus]);
 
   const disconnect = useCallback(() => {
     manualCloseRef.current = true;
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
+    if (reconnectTimerRef.current !== null) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
     }
-    if (socketRef.current) {
-      socketRef.current.close();
-      socketRef.current = null;
+    const ws = socketRef.current;
+    if (ws && ws.readyState !== WebSocket.CLOSED && ws.readyState !== WebSocket.CLOSING) {
+      ws.close();
     }
+    socketRef.current = null;
     setConnected(false);
   }, []);
 
   useEffect(() => {
-    if (sessionId) {
-      connect();
-    }
-    return () => {
-      disconnect();
-    };
+    if (sessionId) connect();
+    return () => disconnect();
   }, [sessionId, connect, disconnect]);
 
-  return { connected, disconnect, connect };
+  return { connected, connect, disconnect };
 }
+
 export default useWorkflowSocket;

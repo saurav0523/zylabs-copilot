@@ -2,7 +2,7 @@ from datetime import datetime
 import json
 import structlog
 from backend.workflow.state import GraphState
-from backend.services.llm import llm_service
+from backend.services.llm import llm_service, MODEL_REPORTER
 from backend.services.websocket_manager import ws_manager
 
 logger = structlog.get_logger()
@@ -72,7 +72,7 @@ async def reporter_node(state: GraphState) -> GraphState:
         })
         
         # Call LLM
-        report = await llm_service.generate_json(system_prompt, user_prompt, expected_keys=expected_keys)
+        report = await llm_service.generate_json(system_prompt, user_prompt, model=MODEL_REPORTER, expected_keys=expected_keys)
         
         # Emit final progress event
         await ws_manager.broadcast(session_id, {

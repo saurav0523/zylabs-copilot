@@ -23,13 +23,35 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ sessionId }) => {
     }
   };
 
-  const parseInlineMarkdown = (text: string) => {
-    const parts = text.split('**');
-    return parts.map((part, i) => {
-      if (i % 2 === 1) {
-        return <strong key={i} className="font-bold text-white">{part}</strong>;
+  const renderChatMessage = (text: string) => {
+    if (!text) return null;
+
+    return text.split('\n').map((line, idx) => {
+      let trimmed = line.trim();
+      
+      const parts = trimmed.split('**');
+      const nodes = parts.map((part, i) => {
+        if (i % 2 === 1) {
+          return <strong key={i} className="font-bold text-white">{part}</strong>;
+        }
+        return part;
+      });
+
+      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+        // Render as bullet point
+        const content = nodes.map((n, i) => {
+          if (typeof n === 'string') return n.replace(/^[-*]\s*/, '');
+          return n;
+        });
+        return (
+          <div key={idx} className="ml-3 flex items-start gap-1.5 py-0.5">
+            <span className="text-slate-500 font-bold mt-0.5">•</span>
+            <span>{content}</span>
+          </div>
+        );
       }
-      return part;
+
+      return trimmed ? <div key={idx} className="py-0.5">{nodes}</div> : <div key={idx} className="h-1.5" />;
     });
   };
 
@@ -81,7 +103,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ sessionId }) => {
                       : 'bg-slate-900 border border-slate-850 text-slate-200 rounded-bl-none'
                   }`}
                 >
-                  {parseInlineMarkdown(msg.content)}
+                  {renderChatMessage(msg.content)}
                 </div>
                 <span className="text-[9px] text-slate-500 mt-1 px-1">
                   {formatTime(msg.created_at)}

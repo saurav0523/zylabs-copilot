@@ -9,7 +9,7 @@ import structlog
 
 from backend.db.session import get_db
 from backend.db.models import Session, Report, ChatMessage, ChatRole
-from backend.services.llm import llm_service
+from backend.services.llm import llm_service, MODEL_CHAT
 from backend.config import request_id_var
 
 logger = structlog.get_logger()
@@ -90,7 +90,7 @@ async def chat_on_session_report(
     
     # 5. Call LLM
     try:
-        reply = await llm_service.generate_text(system_prompt, user_prompt)
+        reply = await llm_service.generate_text(system_prompt, user_prompt, model=MODEL_CHAT)
     except Exception as e:
         logger.error("LLM call failed for chat follow-up", error=str(e), session_id=session_id)
         raise HTTPException(

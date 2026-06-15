@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 import structlog
 from backend.config import settings
 from backend.workflow.state import GraphState
@@ -17,7 +17,7 @@ async def qa_check_node(state: GraphState) -> GraphState:
     await ws_manager.broadcast(session_id, {
         "event": "node_started",
         "node": "qa_check",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
         "payload": {}
     })
     
@@ -32,7 +32,7 @@ async def qa_check_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_progress",
             "node": "qa_check",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"message": "Initiating automated quality and relevance audit..."}
         })
         
@@ -63,7 +63,7 @@ async def qa_check_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_progress",
             "node": "qa_check",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"message": f"Audit complete. Quality Rating: {quality_score}/1.0. Feedback: {feedback}"}
         })
         
@@ -77,7 +77,7 @@ async def qa_check_node(state: GraphState) -> GraphState:
                 await ws_manager.broadcast(session_id, {
                     "event": "node_progress",
                     "node": "qa_check",
-                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                     "payload": {"message": f"Quality score {quality_score} is below compliance target ({settings.QA_QUALITY_THRESHOLD}). Triggering scraper retry (Attempt {new_state['retry_count']}/{settings.MAX_RETRY_COUNT})..."}
                 })
                 logger.info("Low quality score. Scheduling retry.", session_id=session_id, new_retry_count=new_state["retry_count"])
@@ -88,7 +88,7 @@ async def qa_check_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_done",
             "node": "qa_check",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"quality_score": quality_score, "feedback": feedback, "retry_count": new_state.get("retry_count", 0)}
         })
         
@@ -101,7 +101,7 @@ async def qa_check_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "error",
             "node": "qa_check",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"error": str(e)}
         })
         

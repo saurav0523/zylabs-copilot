@@ -33,8 +33,14 @@ export const App: React.FC = () => {
     if (!isResizing) return;
     const handleMouseMove = (e: MouseEvent) => {
       const newWidth = window.innerWidth - e.clientX;
-      if (newWidth > 250 && newWidth < 800) {
+      const maxWidth = Math.max(300, Math.min(500, window.innerWidth - 950));
+      
+      if (newWidth >= 280 && newWidth <= maxWidth) {
         setChatWidth(newWidth);
+      } else if (newWidth > maxWidth) {
+        setChatWidth(maxWidth);
+      } else if (newWidth < 280) {
+        setChatWidth(280);
       }
     };
     const handleMouseUp = () => setIsResizing(false);

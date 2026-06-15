@@ -3,15 +3,25 @@ import { useChat } from '../hooks/useChat';
 import { Send, MessageSquare, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useSessionQuery } from '../hooks/useSession';
+import { useSessionStore } from '../store/sessionStore';
 
 interface ChatPanelProps {
   sessionId: string;
 }
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({ sessionId }) => {
+  const { data: activeSession } = useSessionQuery(sessionId);
   const { chatMessages, sendMessage, loading, error } = useChat(sessionId);
+  const setChatMessages = useSessionStore((state) => state.setChatMessages);
   const [input, setInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (activeSession?.chat_messages) {
+      setChatMessages(activeSession.chat_messages);
+    }
+  }, [activeSession?.chat_messages, setChatMessages]);
 
   const formatTime = (dateStr: string) => {
     try {

@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from backend.main import app
 from backend.db.session import get_db
@@ -63,7 +63,7 @@ def test_list_sessions():
     mock_session_row.objective = "pitch"
     mock_session_row.status = MagicMock()
     mock_session_row.status.value = "pending"
-    mock_session_row.created_at = datetime.utcnow()
+    mock_session_row.created_at = datetime.now(timezone.utc)
     mock_session_row.updated_at = None
 
     mock_execute_result = MagicMock()

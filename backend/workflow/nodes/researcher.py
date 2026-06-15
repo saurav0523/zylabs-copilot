@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import asyncio
 import structlog
 from backend.workflow.state import GraphState
@@ -19,7 +19,7 @@ async def researcher_node(state: GraphState) -> GraphState:
     await ws_manager.broadcast(session_id, {
         "event": "node_started",
         "node": "researcher",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
         "payload": {"retry_count": retry_count}
     })
     
@@ -41,7 +41,7 @@ async def researcher_node(state: GraphState) -> GraphState:
             await ws_manager.broadcast(session_id, {
                 "event": "node_progress",
                 "node": "researcher",
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                 "payload": {"message": f"{prefix_message} Initiating parallel Tavily queries for '{company_name}'..."}
             })
             
@@ -56,7 +56,7 @@ async def researcher_node(state: GraphState) -> GraphState:
                 await ws_manager.broadcast(session_id, {
                     "event": "node_progress",
                     "node": "researcher",
-                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                     "payload": {"message": f"Searching Tavily: '{q}'..."}
                 })
                 try:
@@ -90,7 +90,7 @@ async def researcher_node(state: GraphState) -> GraphState:
             await ws_manager.broadcast(session_id, {
                 "event": "node_progress",
                 "node": "researcher",
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                 "payload": {"message": f"Tavily search completed. Compiled {len(pages)} unique sources."}
             })
         elif retry_count > 0 and website:
@@ -101,7 +101,7 @@ async def researcher_node(state: GraphState) -> GraphState:
                 await ws_manager.broadcast(session_id, {
                     "event": "node_progress",
                     "node": "researcher",
-                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                     "payload": {"message": f"Tavily fallback completed. Compiled {len(pages)} unique sources."}
                 })
             else:
@@ -109,7 +109,7 @@ async def researcher_node(state: GraphState) -> GraphState:
                 await ws_manager.broadcast(session_id, {
                     "event": "node_progress",
                     "node": "researcher",
-                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                     "payload": {"message": f"QA check failed. Initiating wider Firecrawl crawl retry on {website}..."}
                 })
                 logger.info("Performing wider crawl due to retry status", url=website, session_id=session_id)
@@ -117,7 +117,7 @@ async def researcher_node(state: GraphState) -> GraphState:
                 await ws_manager.broadcast(session_id, {
                     "event": "node_progress",
                     "node": "researcher",
-                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                     "payload": {"message": f"Wider crawl finished. Successfully ingested {len(pages)} sub-pages."}
                 })
         else:
@@ -125,7 +125,7 @@ async def researcher_node(state: GraphState) -> GraphState:
             await ws_manager.broadcast(session_id, {
                 "event": "node_progress",
                 "node": "researcher",
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                 "payload": {"message": f"Initiating parallel scraping for {len(targets)} URLs..."}
             })
             # Standard path: scrape individual targets in parallel (with concurrency limit)
@@ -136,7 +136,7 @@ async def researcher_node(state: GraphState) -> GraphState:
                     await ws_manager.broadcast(session_id, {
                         "event": "node_progress",
                         "node": "researcher",
-                        "timestamp": datetime.utcnow().isoformat() + "Z",
+                        "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                         "payload": {"message": f"Requesting scrape for {url}..."}
                     })
                     try:
@@ -146,14 +146,14 @@ async def researcher_node(state: GraphState) -> GraphState:
                             await ws_manager.broadcast(session_id, {
                                 "event": "node_progress",
                                 "node": "researcher",
-                                "timestamp": datetime.utcnow().isoformat() + "Z",
+                                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                                 "payload": {"message": f"Successfully scraped {url} - '{title}'"}
                             })
                         else:
                             await ws_manager.broadcast(session_id, {
                                 "event": "node_progress",
                                 "node": "researcher",
-                                "timestamp": datetime.utcnow().isoformat() + "Z",
+                                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                                 "payload": {"message": f"Warning: Empty content returned for {url}"}
                             })
                         return res
@@ -161,7 +161,7 @@ async def researcher_node(state: GraphState) -> GraphState:
                         await ws_manager.broadcast(session_id, {
                             "event": "node_progress",
                             "node": "researcher",
-                            "timestamp": datetime.utcnow().isoformat() + "Z",
+                            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                             "payload": {"message": f"Error scraping {url}: {str(e)}"}
                         })
                         raise e
@@ -193,7 +193,7 @@ async def researcher_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_done",
             "node": "researcher",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"pages_scraped": len(pages)}
         })
         
@@ -204,7 +204,7 @@ async def researcher_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "error",
             "node": "researcher",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"error": str(e)}
         })
         

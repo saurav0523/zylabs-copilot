@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import structlog
 from backend.workflow.state import GraphState
@@ -16,7 +16,7 @@ async def reporter_node(state: GraphState) -> GraphState:
     await ws_manager.broadcast(session_id, {
         "event": "node_started",
         "node": "reporter",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
         "payload": {}
     })
     
@@ -32,7 +32,7 @@ async def reporter_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_progress",
             "node": "reporter",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"message": f"Compiling final briefing report for '{company_name}'..."}
         })
         
@@ -67,7 +67,7 @@ async def reporter_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_progress",
             "node": "reporter",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"message": "Formatting and synthesizing briefing sections (Profile, Signals, Stack, Outreach)..."}
         })
         
@@ -78,7 +78,7 @@ async def reporter_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_progress",
             "node": "reporter",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"message": "Briefing report synthesized successfully."}
         })
         
@@ -90,7 +90,7 @@ async def reporter_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_done",
             "node": "reporter",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {}
         })
         
@@ -101,7 +101,7 @@ async def reporter_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "error",
             "node": "reporter",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"error": str(e)}
         })
         

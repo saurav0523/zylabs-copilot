@@ -1,113 +1,113 @@
-# product-improvements.md
+# Product Improvements
 
-## 1. Five Weaknesses in the Current Product Design
+---
 
-**W-1 — Single-run, static reports.** Once a report is generated, it is frozen. The world changes — a company closes a funding round, loses a key executive, or launches a new product the day after the report was made. There is no way to refresh a stale section without re-running the full workflow.
+## 1. Five Weaknesses in the Current Design
 
-**W-2 — No user context for the meeting.** The research objective is a freeform text field. The system has no idea whether the user is selling to a Series-A SaaS startup or negotiating a partnership with a Fortune 500. Without structured buyer/seller context, the "Suggested Outreach Strategy" and "Discovery Questions" are generic and low-value.
+**Reports go stale immediately.** Once a report is generated it's frozen. A company can announce a funding round, lose their CEO, or ship a major product update the next morning — and the report still shows yesterday's picture. There's no refresh, no staleness indicator, nothing. For a sales context where timing is everything, this is a real problem.
 
-**W-3 — Report is a monolith, not a workspace.** The current design dumps an 8-section report on the user. There is no way to highlight a section, add a personal note, mark a signal as "already knew this", or collapse sections irrelevant to a specific meeting. It is a read-only document, not a tool.
+**The research objective field is too open-ended.** Right now it's a freeform text box and most users will write something like "sales call prep" which tells the AI almost nothing useful. The system doesn't know if you're an SDR doing cold outreach, an AE going into a renewal, or a founder exploring a partnership. The output ends up generic because the input is generic.
 
-**W-4 — No CRM or calendar integration.** Sales reps already have a workflow: Salesforce for contacts, Google Calendar for meetings, Slack for team communication. The copilot exists in isolation. Every insight the user gets must be manually copied out, which is the exact friction AI is supposed to eliminate.
+**The report is read-only.** It generates a wall of text and that's it. There's no way to highlight something, add a note to yourself, collapse sections you don't care about, or mark something as "already knew this." Sales reps don't just read — they annotate, they prioritize, they skip things. The current UI doesn't let them do any of that.
 
-**W-5 — Follow-up chat has no memory across sessions.** If a user researches Acme Corp today and again in 3 months, the second session starts completely fresh. There is no longitudinal intelligence — no "last time you researched this company, you noted X" — which would be highly valuable for account management.
+**It's completely disconnected from existing workflows.** The people who need this tool already have Salesforce open, Google Calendar reminders firing, Slack threads running. After reading the report they have to manually copy insights into their CRM or their meeting notes. That manual step kills adoption — if it doesn't save time end-to-end, reps won't build a habit around it.
+
+**No memory between sessions.** Research the same company twice and the second run starts completely from scratch. There's no "last time you looked at Acme, the QA score was low because their website was blocked" or "you previously noted they were hiring heavily in APAC." Account management involves returning to the same companies repeatedly, and right now each visit is a cold start.
 
 ---
 
 ## 2. Top 3 Improvements to Build Next
 
-### Priority 1 — Structured buyer/seller context (solves W-2)
+**Structured meeting context (fixes weakness #2)**
 
-Before the workflow runs, ask the user 3–5 targeted questions:
-- What is your role? (AE, SDR, founder, partnership lead)
-- What is the meeting type? (first call, demo, negotiation, renewal)
-- What does your product/service do? (one-line description)
+Instead of a freeform objective field, ask 3 quick questions before running the workflow: what's your role, what kind of meeting is this, and what does your product do in one sentence. These answers get injected directly into the Planner and Reporter prompts. The difference in output quality is night and day — instead of "here's everything about this company," the report says "here's what matters for an AE going into a first demo with an engineering team." That specificity is what makes the tool feel indispensable rather than just convenient.
 
-This context is injected into the Planner and Reporter prompts. The output shifts from "here is everything about this company" to "here is what matters for *your* specific meeting". This is the single highest-leverage improvement — it makes every section of the report immediately actionable rather than informational.
+**Section-level refresh (fixes weakness #1)**
 
-### Priority 2 — Section-level refresh (solves W-1)
+A "Refresh" button per section that re-runs only the Researcher and Analyst nodes scoped to that topic, filtered to content from the last 30 days. Users keep their annotated report but get fresh data where things change fast — funding news, executive moves, product launches. The LangGraph subgraph API supports this without major restructuring.
 
-Allow users to re-run individual sections rather than the full workflow. A "Refresh Business Signals" button re-runs only the Researcher and Analyst nodes for that section, using the current date as a filter prompt. This is a LangGraph subgraph invocation — the architecture already supports it. Users keep their annotated report but get fresh data where it matters.
+**One-click CRM export (fixes weakness #4)**
 
-### Priority 3 — One-click CRM push (solves W-4)
-
-Add a "Push to Salesforce / HubSpot" button on the report page. Map report sections to CRM fields: Company Overview → Account Description, Business Signals → Activity Notes, Discovery Questions → Next Steps task. This turns the copilot from a standalone research tool into a force-multiplier for an existing sales workflow, which is where the retention argument lives.
+A "Push to Salesforce" button that maps report sections to CRM fields automatically: Company Overview → Account Description, Business Signals → Activity log entry, Discovery Questions → Next Steps tasks. This turns the tool from something you use in isolation into something that fits into the workflow that already exists. That's where retention lives.
 
 ---
 
 ## 3. Who Buys It, Who Uses It, Why They Pay
 
-**Buyer:** VP of Sales or Head of Revenue at a B2B SaaS company with a 10–200 person sales team. They care about rep productivity metrics — meetings booked per week, pipeline generated per rep, deal velocity. They buy tools that move those numbers.
+The buyer is a VP of Sales or Head of Revenue at a B2B company with a sales team of 10-200 people. They're paying for rep productivity tools constantly — this fits the same budget as Gong, Outreach, or Clari. What gets their attention is time saved per rep per week, not features.
 
-**User:** Account Executives and SDRs who spend 20–40 minutes manually researching a company before every important call. They hate this task and do it inconsistently. Half of them skip it entirely when the calendar is full.
+The users are AEs and SDRs who currently spend 20-40 minutes Googling before an important call, pulling from 5 different tabs, and still walking in under-prepared. Half of them skip the research entirely when the calendar is full.
 
-**Why they pay:** The copilot reduces pre-call research from 30 minutes to 3 minutes, per rep, per meeting. A team of 10 AEs doing 5 meetings/week saves 25 hours/week of research time. At a fully-loaded rep cost of $80–120/hour, that is $2,000–3,000/week in recovered time — far more than a $200–500/month SaaS subscription. The ROI argument is immediate and measurable.
+Why they pay: the math is straightforward. A team of 10 AEs doing 5 research sessions per week each saves roughly 25 hours of research time weekly. At a blended rep cost of $80/hour, that's $2000/week in recovered time — way more than a $300/month subscription. The ROI conversation is easy.
 
 ---
 
 ## 4. Success Metrics
 
-**Adoption:** Sessions created per user per week (target: ≥ 3 after onboarding). Active users / total registered users (DAU/MAU ratio, target: > 30%).
+Sessions per active user per week — target 3+. If people are using it less than 3 times a week they're not making it a habit, and a tool that isn't a habit doesn't stick.
 
-**Quality:** User rating on generated reports (thumbs up/down, target: > 80% positive). Average quality score from the QA check node (target: > 0.75).
+Report quality score from the internal QA node — target above 0.75 average. Below that and the reports aren't good enough to be trusted.
 
-**Business impact:** Self-reported time saved per session (collected via post-session survey, target: > 20 minutes saved). Pipeline influenced by accounts where the copilot was used (CRM integration metric, long-term).
+User thumbs up/down rating after each report — target 80%+ positive. This is the leading indicator before you have CRM attribution data.
 
-**Reliability:** Workflow completion rate (successful `workflow_complete` / total runs, target: > 95%). P95 workflow duration (target: < 60s).
+Workflow completion rate (successful runs / total runs) — target 95%+. Every failure is a rep who walked into a meeting unprepared and blames the tool.
+
+Time saved per session self-reported via a quick post-report prompt — target 20+ minutes. If users don't feel the time save, they'll stop using it.
 
 ---
 
 ## 5. Four-Week AI Roadmap
 
-| Week | Focus | Outcome |
-|---|---|---|
-| 1 | Structured context intake + prompt personalization | Reports are role-specific and meeting-type-specific |
-| 2 | Section-level refresh + LangGraph subgraph invocation | Users can refresh stale sections without re-running everything |
-| 3 | CRM push (Salesforce + HubSpot MVP via OAuth) | One-click export of report to CRM activity notes |
-| 4 | Longitudinal account memory (pgvector embeddings of past reports) | "Last time" context injected into follow-up sessions on the same company |
+**Week 1** — Structured meeting context intake. Replace the freeform objective field with 3 targeted dropdowns + a short free text box. Update all LLM prompts to consume structured context. Measure report quality score improvement.
+
+**Week 2** — Section-level refresh. Build the LangGraph subgraph for selective re-execution. Add "Last updated" timestamps per section. Ship a "Refresh this section" button in the UI.
+
+**Week 3** — Salesforce + HubSpot export via OAuth. Map report fields to standard CRM objects. Ship the "Push to CRM" button. Track whether export usage correlates with retention.
+
+**Week 4** — Account memory layer. Embed past report sections into pgvector. Pull relevant context from previous sessions on the same company and inject it into new runs. Test with power users who research the same accounts repeatedly.
 
 ---
 
 ## 6. Biggest Cost, Scaling, and Reliability Risks
 
-**Cost:** LLM API costs scale linearly with sessions. The Reporter node sends ~10,000–20,000 tokens per run (scraped content + analysis + report generation). At $15/M tokens, 10,000 sessions/month = $1,500–3,000/month in LLM costs alone, before Firecrawl costs. Mitigation: cache Firecrawl responses aggressively; add a "lite mode" that skips deep crawl and uses only the company homepage.
+**Cost** — LLM API spend scales directly with usage. Each research session makes 4-5 LLM calls with large context windows (scraped content is long). At current token prices, 10,000 sessions/month gets expensive fast. The immediate mitigation is aggressive Firecrawl caching (already implemented) and adding a "quick mode" that only scrapes the homepage instead of 8-10 URLs.
 
-**Scaling:** The current in-process BackgroundTask approach works for < 100 concurrent sessions. Above that, long-running workflows will exhaust FastAPI worker threads. Mitigation path: move to Celery + Redis task queue (already planned as TD-01 in `engineering-decisions.md`).
+**Scaling** — The workflow runs as an in-process FastAPI background task. That works fine under low concurrency but starts breaking when multiple long-running workflows compete for the same threads. The fix is moving to a proper task queue (Celery + Redis), but that's not in the current MVP.
 
-**Reliability:** The system has three external dependencies that can fail independently: Firecrawl, the LLM provider, and PostgreSQL. A Firecrawl outage silently produces empty research notes; an LLM outage kills the Analysis and Reporter nodes. Mitigation: circuit breakers on both external clients, graceful degradation (partial reports with "unavailable" placeholders), and a status page that reflects real-time dependency health.
-
----
-
-## 7. Feature to Remove
-
-**Remove:** The freeform research objective text field in its current form.
-
-**Why:** Users write objectives like "prepare for sales call" — which is uselessly vague — or write a paragraph of context that the LLM partially ignores because the prompt doesn't structure it. The field adds a false sense of personalization without delivering it.
-
-**Replace with:** Structured dropdowns (meeting type, user role) plus a short "additional context" optional field capped at 280 characters. This gives the LLM clean, structured input and takes the cognitive load off the user.
+**Reliability** — There are three external dependencies that can each fail independently: Firecrawl, the LLM provider, and the database. A Firecrawl outage during a sales team's busy morning would surface as a wave of failed reports with no clear user message. Need circuit breakers, better error messaging, and a status page showing dependency health.
 
 ---
 
-## 8. Feature to Add
+## 7. Feature I'd Remove
 
-**Add:** A "Red Flags" section to the report — automatically surfaced risk signals that are relevant to the user's role.
+The freeform research objective text field — not the concept, just the current implementation.
 
-**Why:** Sales reps are incentivized to be optimistic. They often ignore signals that a prospect is a bad fit: high churn signals, legal troubles, leadership instability, recent funding cuts. A dedicated "Risks & Red Flags" section that the AI surfaces proactively changes the tool from a cheerleader into a genuine advisor. It also differentiates the product — most research tools surface positives. This one surfaces what not to miss.
+It creates false confidence. Users think their objective is being "understood" by the AI, but a vague objective like "sales call" contributes almost nothing to the output quality. It's input theater. Replacing it with 3 structured dropdowns gives the AI genuinely useful context and takes the cognitive burden off the user. The field as-is is worse than nothing because it implies personalization that isn't really happening.
+
+---
+
+## 8. Feature I'd Add
+
+A "Red Flags" section in the report that's separate from risks and challenges.
+
+Risks and challenges are things you already know to look for. Red flags are things you might be inclined to ignore — recent executive departures, Glassdoor patterns suggesting internal chaos, product reviews mentioning support issues, funding rounds that are suspiciously small or haven't happened in 3 years. Sales reps are optimistic by nature and often rationalize away signals that a deal is going to be hard. A dedicated section that explicitly surfaces red flags makes the tool honest in a way that's genuinely valuable for rep productivity, not just for closing deals faster but for closing the *right* deals faster.
 
 ---
 
 ## 9. First 90-Day Roadmap
 
-**Days 1–30 (Prove the core):** Ship the MVP. Onboard 20 design-partner reps from 5 companies. Run weekly interviews. Instrument every session with logging (time spent on report, sections clicked, follow-up chat volume). Identify which report sections users actually read vs skip.
+**Days 1-30 — Validate with real users.** Get the MVP in front of 15-20 sales reps from 4-5 companies (mix of sizes and verticals). Run sessions where they use the tool before an actual call and then debrief after. Watch for which report sections they read first, which they skip, and whether the follow-up chat gets used. Don't build anything new — just observe.
 
-**Days 31–60 (Tighten the loop):** Ship structured context intake (Priority 1). Kill the report sections that usage data shows are universally ignored. Optimize P95 workflow duration to < 45s. Add thumbs up/down rating on the report page. Target: > 75% of design partners using the tool weekly without being prompted.
+**Days 31-60 — Fix the biggest friction points.** Based on what the first month shows, ship structured context intake (almost certainly the highest impact change based on the generic-output problem) and fix whatever completion rate issues surfaced in production. Also add the thumbs up/down rating to start collecting quality signal at scale.
 
-**Days 61–90 (Expand the value chain):** Ship CRM push (Priority 3). Begin Salesforce AppExchange listing process. Add a team dashboard for managers (sessions run, reports generated, average quality score). Start the sales motion: convert design partners to paid accounts. Target: 3 paid teams by Day 90.
+**Days 61-90 — Start the monetization motion.** Introduce a paid tier. Ship CRM export as a paid feature. Start having commercial conversations with the companies whose reps are using it most. Target: at least 3 teams on paid plans by day 90, and a clear enough retention pattern that you can model growth.
 
 ---
 
-## 10. What I Would Change First and Why
+## 10. What I'd Change First
 
-**I would add structured buyer/seller context intake before anything else.**
+The research objective input.
 
-The biggest reason a research tool fails to become a habit is that the output isn't relevant enough to be trusted. A generic company overview is something a rep could get from the company's own website. The moment the report says "Given that you're an AE trying to book a first demo with the Head of Engineering, here are the three questions most likely to unlock the technical pain point" — it becomes irreplaceable. That specificity is not a UI problem or an AI quality problem. It is an input quality problem. Fix the input, and the output quality improves across every section without changing a single prompt template.
+Everything else about the product — the LangGraph workflow, the WebSocket progress UI, the report structure — is solid engineering. The bottleneck isn't technical, it's the quality of the input going into the LLM. A rep typing "prepare for call" into a freeform box gets a report that could apply to any company in any industry. The same rep selecting "AE / First Demo / Selling a sales analytics platform" gets a report that's actually calibrated to their situation.
+
+That change doesn't require touching the backend workflow at all. It's a frontend form change and a prompt update. The ROI on it is higher than anything else on this list because it makes every single report better immediately, not just for edge cases.

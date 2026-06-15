@@ -26,8 +26,16 @@ export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({ events, stat
     { name: 'reporter', label: 'Reporter Node', desc: 'Compiling structured findings into an 8-section executive briefing.' }
   ];
 
+  // Find the furthest active node index to enforce serial progression
+  let furthestActiveIndex = -1;
+  stepsConfig.forEach((cfg, idx) => {
+    if (events.some((e) => e.node === cfg.name && ['node_started', 'node_progress', 'node_done'].includes(e.event))) {
+      furthestActiveIndex = Math.max(furthestActiveIndex, idx);
+    }
+  });
+
   // Derive steps status based on events
-  const steps: StepState[] = stepsConfig.map((cfg) => {
+  const steps: StepState[] = stepsConfig.map((cfg, idx) => {
     // Find latest events for this specific node
     const nodeEvents = events.filter((e) => e.node === cfg.name);
     const started = nodeEvents.find((e) => e.event === 'node_started');
@@ -37,15 +45,20 @@ export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({ events, stat
     let stepStatus: StepState['status'] = 'idle';
     let meta: any = null;
 
-    if (done) {
+    if (hasError) {
+      stepStatus = 'failed';
+      meta = hasError.payload;
+    } else if (done) {
       stepStatus = 'done';
       meta = done.payload;
     } else if (started) {
       stepStatus = 'running';
       meta = started.payload;
-    } else if (hasError) {
-      stepStatus = 'failed';
-      meta = hasError.payload;
+    } else if (idx < furthestActiveIndex || (status === 'done' && !hasError)) {
+      // Serial enforcement: if a later step is active, or the whole session is done, this step MUST be done
+      stepStatus = 'done';
+    } else if (idx === furthestActiveIndex) {
+      stepStatus = 'running';
     }
 
     // Adjust descriptions based on actual execution payload

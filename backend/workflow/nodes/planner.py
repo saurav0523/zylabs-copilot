@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import structlog
 from backend.workflow.state import GraphState
 from backend.services.llm import llm_service, MODEL_PLANNER
@@ -15,7 +15,7 @@ async def planner_node(state: GraphState) -> GraphState:
     await ws_manager.broadcast(session_id, {
         "event": "node_started",
         "node": "planner",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
         "payload": {}
     })
     
@@ -23,7 +23,7 @@ async def planner_node(state: GraphState) -> GraphState:
     await ws_manager.broadcast(session_id, {
         "event": "node_progress",
         "node": "planner",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
         "payload": {"message": f"Analyzing objective for '{state.get('company_name', 'target company')}' to formulate search plan..."}
     })
     
@@ -66,7 +66,7 @@ async def planner_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_progress",
             "node": "planner",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"message": f"Crawl plan formulated. Target URLs: {', '.join(targets)}"}
         })
         
@@ -77,7 +77,7 @@ async def planner_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_done",
             "node": "planner",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"targets": targets}
         })
         
@@ -88,7 +88,7 @@ async def planner_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "error",
             "node": "planner",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"error": str(e)}
         })
         

@@ -30,6 +30,7 @@ export interface Session {
   created_at: string;
   updated_at: string | null;
   report?: Report | null;
+  chat_messages?: ChatMessage[];
 }
 
 export interface ChatMessage {

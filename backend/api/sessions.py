@@ -1,6 +1,6 @@
 import re
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, field_validator
@@ -69,7 +69,7 @@ async def create_session(payload: SessionCreateRequest, db: AsyncSession = Depen
         website=payload.website,
         objective=payload.objective,
         status=SessionStatus.PENDING,
-        created_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc)
     )
     
     db.add(new_session)
@@ -116,7 +116,10 @@ async def get_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_db))
     """Retrieves session details and its generated report (if completed)."""
     logger.info("Fetching session details", session_id=session_id)
     
-    stmt = select(Session).options(selectinload(Session.report)).where(Session.id == session_id)
+    stmt = select(Session).options(
+        selectinload(Session.report),
+        selectinload(Session.chat_messages)
+    ).where(Session.id == session_id)
     result = await db.execute(stmt)
     s = result.scalar_one_or_none()
     
@@ -136,6 +139,19 @@ async def get_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_db))
             "created_at": format_datetime(s.report.created_at)
         }
         
+    chat_history = []
+    if s.chat_messages:
+        # Sort by creation time to maintain order
+        sorted_msgs = sorted(s.chat_messages, key=lambda x: x.created_at)
+        for msg in sorted_msgs:
+            chat_history.append({
+                "id": str(msg.id),
+                "session_id": str(msg.session_id),
+                "role": msg.role.value,
+                "content": msg.content,
+                "created_at": format_datetime(msg.created_at)
+            })
+
     data = {
         "id": str(s.id),
         "company_name": s.company_name,
@@ -145,7 +161,8 @@ async def get_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_db))
         "error_message": s.error_message,
         "created_at": format_datetime(s.created_at),
         "updated_at": format_datetime(s.updated_at),
-        "report": report_data
+        "report": report_data,
+        "chat_messages": chat_history
     }
     
     return envelope(data)

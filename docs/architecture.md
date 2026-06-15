@@ -2,7 +2,7 @@
 
 ## Overview
 
-The system is a full-stack AI application with four distinct layers: a React frontend, a FastAPI backend, a LangGraph AI workflow engine, and a PostgreSQL + Redis persistence layer. All layers communicate through well-defined contracts; no layer reaches across another.
+The system is a full-stack AI application with four distinct layers: a React frontend, a FastAPI backend, a LangGraph AI workflow engine, and a PostgreSQL + Memory persistence layer. All layers communicate through well-defined contracts; no layer reaches across another.
 
 ```
 Browser (React + Vite)
@@ -14,7 +14,7 @@ FastAPI (Python)  ────────────────────�
 LangGraph Workflow Engine
     │  Firecrawl API (external)
     ▼
-PostgreSQL  │  Redis  │  Local file cache
+PostgreSQL  │  Memory  │  Local file cache
 ```
 
 ---
@@ -199,7 +199,7 @@ content       TEXT
 created_at    TIMESTAMPTZ
 ```
 
-#### Redis
+#### Memory
 
 | Key pattern | TTL | Purpose |
 |---|---|---|

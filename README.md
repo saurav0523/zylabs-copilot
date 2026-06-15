@@ -1,33 +1,34 @@
 # ZyLabs AI Research Copilot
 
-> Production-grade sales research assistant powered by LangGraph, FastAPI, React, Firecrawl, and PostgreSQL.
+> A production-grade AI sales research assistant powered by LangGraph, FastAPI, React, Firecrawl, and PostgreSQL.
 
 ---
 
-## What it does
+## 🎯 What it does
 
-Given a company name, website, and meeting objective, the copilot:
-1. Plans which pages to scrape (Planner node)
-2. Crawls the web using Firecrawl (Researcher node)
-3. Extracts structured business signals using an LLM (Analyst node)
-4. Quality-checks the analysis and retries if needed (QA Check node)
-5. Generates an 8-section structured briefing (Reporter node)
-6. Streams real-time progress to the browser via WebSocket
+Given a company name, website, and a meeting objective, the copilot executes a deterministic, multi-agent AI pipeline to compile a comprehensive executive briefing.
 
-The user can then ask follow-up questions about the report via an in-page chat interface.
+1. **Plans** which pages to scrape using intelligent target selection.
+2. **Crawls** the web in real-time using Firecrawl and Tavily (with smart in-memory caching).
+3. **Extracts** structured business signals using highly constrained LLM parsing.
+4. **Evaluates** its own output using an automated QA Check (with automatic LLM fallback and scraper retries).
+5. **Generates** an 8-section structured markdown briefing.
+6. **Streams** real-time execution progress to the browser via WebSockets.
+
+The user can view the fully populated briefing UI and engage in an interactive follow-up chat with the AI contextually grounded in the report data.
 
 ---
 
-## Stack
+## 🏗️ Architecture Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Zustand, React Query |
+| Frontend | React 18, TypeScript, Vite, TailwindCSS, Zustand, React Query |
 | Backend | Python 3.11, FastAPI, SQLAlchemy 2.x (async), Alembic |
-| AI Workflow | LangGraph (`StateGraph`), Anthropic Claude / OpenAI GPT-4o |
-| Web Research | Firecrawl API |
-| Database | PostgreSQL 15 |
-| Cache / WS State | Redis 7 |
+| AI Workflow | LangGraph (`StateGraph`), OpenRouter (Claude/Llama) |
+| Web Research | Firecrawl API, Tavily API |
+| App State / Data | PostgreSQL (Neon) |
+| Cache / WS State | In-Memory (Dict) - Zero Config |
 | Container | Docker + Docker Compose |
 
 ---
@@ -114,8 +115,7 @@ npm run dev
 Copy `.env.example` and fill in values:
 
 ```env
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/zylabs
-REDIS_URL=redis://localhost:6379/0
+
 
 FIRECRAWL_API_KEY=fc-...
 ANTHROPIC_API_KEY=sk-ant-...   # or OPENAI_API_KEY=sk-...

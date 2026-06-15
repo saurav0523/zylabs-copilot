@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
 from sqlalchemy import select
@@ -100,7 +100,7 @@ async def execute_workflow_task(session_id: uuid.UUID) -> None:
                 await ws_manager.broadcast(str(session_id), {
                     "event": "workflow_complete",
                     "node": "reporter",
-                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                     "payload": {
                         "report_id": str(report.id),
                         "error": error_msg,
@@ -135,7 +135,7 @@ async def execute_workflow_task(session_id: uuid.UUID) -> None:
             await ws_manager.broadcast(str(session_id), {
                 "event": "error",
                 "node": "workflow_engine",
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                 "payload": {"error": str(e)}
             })
 

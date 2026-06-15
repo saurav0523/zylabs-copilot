@@ -17,7 +17,7 @@ Zero secrets, URLs, model names, thresholds, or timeouts in source code. Every t
 The five-node pipeline (Planner → Researcher → Analyst → QA Check → Reporter) is the canonical shape. Do not add nodes, remove nodes, or rewire edges without updating `architecture.md` and `engineering-decisions.md` in the same PR. Adding a shortcut LLM call outside the graph is strictly prohibited.
 
 **R-04 — All persistent state goes through the DB layer.**
-Nodes must not write to PostgreSQL directly. State is carried in `GraphState` during execution, then persisted by the API layer after `workflow_complete`. Redis is for ephemeral coordination only (WebSocket registry, in-flight state snapshots, scrape cache).
+Nodes must not write to PostgreSQL directly. State is carried in `GraphState` during execution, then persisted by the API layer after `workflow_complete`. Memory is for ephemeral coordination only (WebSocket registry, in-flight state snapshots, scrape cache).
 
 ---
 

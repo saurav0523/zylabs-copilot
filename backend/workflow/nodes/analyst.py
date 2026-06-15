@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import structlog
 from backend.workflow.state import GraphState
 from backend.services.llm import llm_service, MODEL_ANALYST
@@ -15,7 +15,7 @@ async def analyst_node(state: GraphState) -> GraphState:
     await ws_manager.broadcast(session_id, {
         "event": "node_started",
         "node": "analyst",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
         "payload": {}
     })
     
@@ -31,7 +31,7 @@ async def analyst_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_progress",
             "node": "analyst",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"message": f"Starting structured business signal extraction for '{company_name}'..."}
         })
         
@@ -66,7 +66,7 @@ async def analyst_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_progress",
             "node": "analyst",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"message": f"Parsing raw research notes ({len(research_notes)} characters) via LLM..."}
         })
         
@@ -78,7 +78,7 @@ async def analyst_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_progress",
             "node": "analyst",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"message": f"Successfully structured {signals_count} key business signals."}
         })
         
@@ -89,7 +89,7 @@ async def analyst_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_done",
             "node": "analyst",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"signals_extracted": len(analysis.get("business_signals", []))}
         })
         
@@ -100,7 +100,7 @@ async def analyst_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "error",
             "node": "analyst",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"error": str(e)}
         })
         

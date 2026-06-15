@@ -67,10 +67,13 @@ export function useWorkflowSocket(sessionId: string | null) {
 
         if (parsed.event === 'workflow_complete') {
           updateSessionStatus(sessionId, 'done');
+          // Crucial: Invalidate the query so React Query fetches the newly generated Report!
+          queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
           manualCloseRef.current = true;
           ws.close();
         } else if (parsed.event === 'error') {
           updateSessionStatus(sessionId, 'failed');
+          queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
           manualCloseRef.current = true;
           ws.close();
         }

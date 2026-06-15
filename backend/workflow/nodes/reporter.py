@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import structlog
 from backend.workflow.state import GraphState
@@ -16,7 +16,7 @@ async def reporter_node(state: GraphState) -> GraphState:
     await ws_manager.broadcast(session_id, {
         "event": "node_started",
         "node": "reporter",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
         "payload": {}
     })
     
@@ -32,14 +32,15 @@ async def reporter_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_progress",
             "node": "reporter",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"message": f"Compiling final briefing report for '{company_name}'..."}
         })
         
         system_prompt = (
-            "You are a sales reporter. Your task is to write a highly polished, professional "
-            "8-section sales briefing. Use formatting, bullet points, and markdown for clarity. "
-            "Synthesize the analysis data into the requested report structure."
+            "You are a senior enterprise sales reporter. Your task is to write a structured sales briefing based ONLY on the provided Analysis Data. "
+            "Scale the level of detail based on the data available: if there is abundant data, provide a highly detailed, comprehensive section with multiple paragraphs and bullet points. "
+            "If there is very little data, keep it brief and strictly limited to what is available. Do NOT invent facts, numbers, or names. "
+            "Do NOT hallucinate information to make the report longer. Use formatting, bolding, and bullet points where applicable."
         )
         
         user_prompt = (
@@ -67,7 +68,7 @@ async def reporter_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_progress",
             "node": "reporter",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"message": "Formatting and synthesizing briefing sections (Profile, Signals, Stack, Outreach)..."}
         })
         
@@ -78,7 +79,7 @@ async def reporter_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_progress",
             "node": "reporter",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"message": "Briefing report synthesized successfully."}
         })
         
@@ -90,7 +91,7 @@ async def reporter_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "node_done",
             "node": "reporter",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {}
         })
         
@@ -101,7 +102,7 @@ async def reporter_node(state: GraphState) -> GraphState:
         await ws_manager.broadcast(session_id, {
             "event": "error",
             "node": "reporter",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "payload": {"error": str(e)}
         })
         

@@ -21,7 +21,6 @@ def setup_logging(log_level: str = "INFO") -> None:
         cache_logger_on_first_use=True,
     )
     
-    # Configure root logger to output to stdout with basic formatting if non-structlog is used
     logging.basicConfig(
         level=numeric_level,
         format="%(message)s",

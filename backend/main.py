@@ -84,8 +84,6 @@ async def general_exception_handler(request: Request, exc: Exception):
     req_id = request_id_var.get()
     logger.error("Unhandled exception", error=str(exc), exc_info=True, request_id=req_id)
     
-    # Check if dependency unavailable (R-15 support for 503)
-    # E.g., if "firecrawl" or "anthropic" or "openai" is in error message
     exc_str = str(exc).lower()
     if any(dep in exc_str for dep in ["firecrawl", "openai", "anthropic", "connection refused"]):
         status_code = status.HTTP_503_SERVICE_UNAVAILABLE

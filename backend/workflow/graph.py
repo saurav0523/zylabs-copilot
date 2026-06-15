@@ -14,7 +14,7 @@ def route_after_qa(state: GraphState) -> str:
     
     # Check if there is an error in state; if so, shortcut to END
     if state.get("error"):
-        return "reporter"  # Reporter node will handle fallback/best effort
+        return "reporter" 
         
     if quality_score >= settings.QA_QUALITY_THRESHOLD:
         return "reporter"

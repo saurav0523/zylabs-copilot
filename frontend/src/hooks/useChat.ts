@@ -1,34 +1,30 @@
-import { useState, useCallback } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { useSessionStore } from '../store/sessionStore';
 import { api } from '../api/client';
 import type { ChatMessage } from '../types';
 
 export function useChat(sessionId: string | null) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
   const chatMessages = useSessionStore((state) => state.chatMessages);
   const addChatMessage = useSessionStore((state) => state.addChatMessage);
 
-  const sendMessage = useCallback(async (message: string) => {
-    if (!sessionId) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    // Add user message to state
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      session_id: sessionId,
-      role: 'user',
-      content: message,
-      created_at: new Date().toISOString()
-    };
-    addChatMessage(userMsg);
-    
-    try {
-      const data = await api.sendChatMessage(sessionId, message);
-      
+  const sendMessageMutation = useMutation({
+    mutationFn: async (message: string) => {
+      if (!sessionId) throw new Error('No session active');
+      return api.sendChatMessage(sessionId, message);
+    },
+    onMutate: async (message) => {
+      if (!sessionId) return;
+      const userMsg: ChatMessage = {
+        id: `user-${Date.now()}`,
+        session_id: sessionId,
+        role: 'user',
+        content: message,
+        created_at: new Date().toISOString()
+      };
+      addChatMessage(userMsg);
+    },
+    onSuccess: (data, message, context) => {
+      if (!sessionId) return;
       const assistantMsg: ChatMessage = {
         id: `assistant-${Date.now()}`,
         session_id: sessionId,
@@ -37,10 +33,9 @@ export function useChat(sessionId: string | null) {
         created_at: new Date().toISOString()
       };
       addChatMessage(assistantMsg);
-    } catch (err: any) {
-      setError(err.message || 'Failed to send message');
-      
-      // Optionally notify user of failure
+    },
+    onError: (err: any) => {
+      if (!sessionId) return;
       const errorMsg: ChatMessage = {
         id: `error-${Date.now()}`,
         session_id: sessionId,
@@ -49,16 +44,14 @@ export function useChat(sessionId: string | null) {
         created_at: new Date().toISOString()
       };
       addChatMessage(errorMsg);
-    } finally {
-      setLoading(false);
     }
-  }, [sessionId, addChatMessage]);
+  });
 
   return {
-    loading,
-    error,
+    loading: sendMessageMutation.isPending,
+    error: sendMessageMutation.error ? sendMessageMutation.error.message : null,
     chatMessages,
-    sendMessage
+    sendMessage: sendMessageMutation.mutateAsync
   };
 }
 export default useChat;

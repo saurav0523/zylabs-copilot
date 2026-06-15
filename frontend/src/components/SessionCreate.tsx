@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSession } from '../hooks/useSession';
+import { useCreateSessionMutation, useRunSessionMutation } from '../hooks/useSession';
 import { Play, Globe, AlignLeft, Building } from 'lucide-react';
 
 interface SessionCreateProps {
@@ -7,7 +7,12 @@ interface SessionCreateProps {
 }
 
 export const SessionCreate: React.FC<SessionCreateProps> = ({ onSuccess }) => {
-  const { createSession, runSession, loading, error: apiError } = useSession();
+  const { mutateAsync: createSession, isPending: isCreating, error: createError } = useCreateSessionMutation();
+  const { mutateAsync: runSession, isPending: isRunning, error: runError } = useRunSessionMutation();
+  
+  const loading = isCreating || isRunning;
+  const apiError = (createError as Error)?.message || (runError as Error)?.message;
+
   const [companyName, setCompanyName] = useState('');
   const [website, setWebsite] = useState('');
   const [objective, setObjective] = useState('');
@@ -35,7 +40,7 @@ export const SessionCreate: React.FC<SessionCreateProps> = ({ onSuccess }) => {
     }
 
     try {
-      const session = await createSession(companyName, website, objective);
+      const session = await createSession({ companyName, website, objective });
       await runSession(session.id);
       onSuccess(session.id);
     } catch (err: any) {

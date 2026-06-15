@@ -1,79 +1,79 @@
-import { useState, useCallback } from 'react';
-import { useSessionStore } from '../store/sessionStore';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
+import type { Session } from '../types';
 
-export function useSession() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  const setSessions = useSessionStore((state) => state.setSessions);
-  const addSession = useSessionStore((state) => state.addSession);
-  const setActiveSession = useSessionStore((state) => state.setActiveSession);
-  const updateSessionStatus = useSessionStore((state) => state.updateSessionStatus);
-
-  const listSessions = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await api.listSessions();
-      setSessions(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to list sessions');
-    } finally {
-      setLoading(false);
-    }
-  }, [setSessions]);
-
-  const getSession = useCallback(async (sessionId: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await api.getSession(sessionId);
-      setActiveSession(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch session');
-    } finally {
-      setLoading(false);
-    }
-  }, [setActiveSession]);
-
-  const createSession = useCallback(async (companyName: string, website: string, objective: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await api.createSession({ company_name: companyName, website, objective });
-      addSession(data);
-      return data;
-    } catch (err: any) {
-      setError(err.message || 'Failed to create session');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [addSession]);
-
-  const runSession = useCallback(async (sessionId: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await api.runSession(sessionId);
-      updateSessionStatus(sessionId, 'running');
-      return data;
-    } catch (err: any) {
-      setError(err.message || 'Failed to run session');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [updateSessionStatus]);
-
-  return {
-    loading,
-    error,
-    listSessions,
-    getSession,
-    createSession,
-    runSession
-  };
+export function useSessionsQuery() {
+  return useQuery({
+    queryKey: ['sessions'],
+    queryFn: () => api.listSessions(),
+  });
 }
-export default useSession;
+
+export function useSessionQuery(sessionId: string | null) {
+  return useQuery({
+    queryKey: ['session', sessionId],
+    queryFn: () => sessionId ? api.getSession(sessionId) : Promise.reject('No session ID'),
+    enabled: !!sessionId,
+  });
+}
+
+export function useCreateSessionMutation() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (variables: { companyName: string; website: string; objective: string }) => 
+      api.createSession({ 
+        company_name: variables.companyName, 
+        website: variables.website, 
+        objective: variables.objective 
+      }),
+    onSuccess: (newSession) => {
+      // Invalidate the sessions list so it refetches
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      // Pre-populate the individual session cache
+      queryClient.setQueryData(['session', newSession.id], newSession);
+    },
+  });
+}
+
+export function useRunSessionMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (sessionId: string) => api.runSession(sessionId),
+    onMutate: async (sessionId) => {
+      // update react query cache optimistically
+      await queryClient.cancelQueries({ queryKey: ['session', sessionId] });
+      await queryClient.cancelQueries({ queryKey: ['sessions'] });
+
+      const previousSession = queryClient.getQueryData<Session>(['session', sessionId]);
+      if (previousSession) {
+        queryClient.setQueryData<Session>(['session', sessionId], {
+          ...previousSession,
+          status: 'running',
+        });
+      }
+
+      const previousSessions = queryClient.getQueryData<Session[]>(['sessions']);
+      if (previousSessions) {
+        queryClient.setQueryData<Session[]>(['sessions'], 
+          previousSessions.map(s => s.id === sessionId ? { ...s, status: 'running' } : s)
+        );
+      }
+
+      return { previousSession, previousSessions };
+    },
+    onSuccess: (_, sessionId) => {
+      // We don't invalidate here immediately because the websocket will handle updates,
+      // but we could if we wanted to guarantee sync.
+    },
+    onError: (err, sessionId, context) => {
+      if (context?.previousSession) {
+        queryClient.setQueryData(['session', sessionId], context.previousSession);
+      }
+      if (context?.previousSessions) {
+        queryClient.setQueryData(['sessions'], context.previousSessions);
+      }
+    },
+  });
+}

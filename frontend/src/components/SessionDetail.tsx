@@ -1,28 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { useSession } from '../hooks/useSession';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useSessionQuery, useRunSessionMutation } from '../hooks/useSession';
 import { useSessionStore } from '../store/sessionStore';
 import { useWorkflowSocket } from '../hooks/useWorkflowSocket';
 import { WorkflowProgress } from './WorkflowProgress';
+import { Skeleton, SkeletonText } from './Skeleton';
 import { 
   Building2, Globe, Target, ShieldAlert,
   ArrowLeft, ListFilter, Cpu, Users, BarChart3, HelpCircle, Mail, AlertTriangle,
   RefreshCw, RotateCcw, ExternalLink
 } from 'lucide-react';
 
-interface SessionDetailProps {
-  sessionId: string;
-  onBack?: () => void;
-}
+export const SessionDetail: React.FC = () => {
+  const { sessionId } = useParams<{ sessionId: string }>();
+  const navigate = useNavigate();
 
-export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onBack }) => {
-  const { getSession, runSession, loading, error } = useSession();
-  const activeSession = useSessionStore((state) => state.activeSession);
+  const { data: activeSession, isLoading: loading, error, refetch: getSession } = useSessionQuery(sessionId || null);
+  const { mutateAsync: runSession } = useRunSessionMutation();
   const workflowEvents = useSessionStore((state) => state.workflowEvents);
   
   // Track selected report section tab
   const [activeTab, setActiveTab] = useState<string>('company_profile');
 
   const handleRetryWorkflow = async () => {
+    if (!sessionId) return;
     try {
       useSessionStore.getState().clearWorkflowEvents();
       await runSession(sessionId);
@@ -33,13 +34,7 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onBack 
 
   // Trigger WS subscription when session is running
   const isRunning = activeSession?.status === 'running';
-  useWorkflowSocket(isRunning ? sessionId : null);
-
-  useEffect(() => {
-    if (sessionId) {
-      getSession(sessionId);
-    }
-  }, [sessionId, getSession]);
+  useWorkflowSocket(isRunning ? (sessionId || null) : null);
 
   // Sync activeTab to first available section if needed
   useEffect(() => {
@@ -57,20 +52,22 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onBack 
   // Auto-fetch the report from the backend when WS sets status to done
   useEffect(() => {
     if (needsReport && !loading) {
-      getSession(sessionId);
+      getSession();
     }
-  }, [needsReport, loading, sessionId, getSession]);
+  }, [needsReport, loading, getSession]);
+
+  if (!sessionId) return null;
 
   if (!activeSession || (loading && needsReport)) {
     return (
-      <div className="flex flex-col h-full bg-slate-950 overflow-hidden animate-pulse">
+      <div className="flex flex-col h-full bg-slate-950 overflow-hidden">
         {/* Header Skeleton */}
         <div className="p-5 border-b border-slate-900 flex justify-between items-center bg-slate-900/20">
           <div className="space-y-2">
-            <div className="h-5 w-40 bg-slate-800 rounded-md" />
-            <div className="h-3 w-48 bg-slate-850 rounded-md" />
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-3 w-48" />
           </div>
-          <div className="h-5 w-20 bg-slate-800 rounded-full" />
+          <Skeleton className="h-5 w-20 rounded-full" />
         </div>
 
         {/* Body Workspace Skeleton */}
@@ -78,23 +75,19 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onBack 
           {/* Sidebar Tabs Skeleton */}
           <div className="w-full md:w-56 flex-shrink-0 flex md:flex-col overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 border-b md:border-b-0 border-slate-900 md:space-y-2">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="h-10 w-28 md:w-full bg-slate-900 border border-slate-850/60 rounded-xl flex-shrink-0" />
+              <Skeleton key={i} className="h-10 w-28 md:w-full rounded-xl flex-shrink-0" />
             ))}
           </div>
 
           {/* Main Document Content Skeleton */}
           <div className="flex-1 w-full bg-slate-900/10 border border-slate-900 rounded-2xl p-6 space-y-5">
             <div className="flex justify-between items-center border-b border-slate-900 pb-3">
-              <div className="h-6 w-1/3 bg-slate-800 rounded-md" />
-              <div className="h-4 w-24 bg-slate-850 rounded-full" />
+              <Skeleton className="h-6 w-1/3" />
+              <Skeleton className="h-4 w-24 rounded-full" />
             </div>
-            
-            <div className="space-y-4">
-              <div className="h-4 w-full bg-slate-850/60 rounded" />
-              <div className="h-4 w-[95%] bg-slate-850/60 rounded" />
-              <div className="h-4 w-[85%] bg-slate-850/60 rounded" />
-              <div className="h-4 w-[90%] bg-slate-850/60 rounded" />
-            </div>
+            <SkeletonText lines={4} />
+            <SkeletonText lines={3} className="mt-6" />
+            <SkeletonText lines={5} className="mt-6" />
           </div>
         </div>
       </div>
@@ -106,18 +99,16 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onBack 
       <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">
         <AlertTriangle size={48} className="text-red-500" />
         <h3 className="text-lg font-semibold text-slate-200">Failed to load session</h3>
-        <p className="text-slate-400 text-sm max-w-md">{error || 'Session details are unavailable.'}</p>
+        <p className="text-slate-400 text-sm max-w-md">{error.message || 'Session details are unavailable.'}</p>
         <div className="flex gap-3 mt-2">
-          {onBack && (
-            <button 
-              onClick={onBack} 
-              className="flex items-center gap-2 px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-850 text-sm transition text-slate-300"
-            >
-              <ArrowLeft size={16} /> Back to dashboard
-            </button>
-          )}
           <button 
-            onClick={() => getSession(sessionId)} 
+            onClick={() => navigate('/')} 
+            className="flex items-center gap-2 px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-850 text-sm transition text-slate-300"
+          >
+            <ArrowLeft size={16} /> Back to dashboard
+          </button>
+          <button 
+            onClick={() => getSession()} 
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-medium transition"
           >
             <RefreshCw size={14} /> Retry Loading
@@ -143,28 +134,23 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onBack 
     
     const lower = errorMsg.toLowerCase();
     
-    // Rate limit / Quota exceeded
     if (lower.includes('429') || lower.includes('quota') || lower.includes('rate_limit') || lower.includes('rate limit') || lower.includes('resource_exhausted')) {
       return "LLM Quota Exceeded: You have exceeded your LLM provider's free-tier rate limit or daily quota. Please wait a moment or configure a billing account to continue.";
     }
     
-    // Auth / API key missing
     if (lower.includes('401') || lower.includes('unauthorized') || lower.includes('api key') || lower.includes('key is not configured')) {
       return 'Authentication Error: Invalid or missing API key. Please check your config key configurations.';
     }
     
-    // Network timeout / Connection refused
     if (lower.includes('conn') || lower.includes('refused') || lower.includes('timeout') || lower.includes('host') || lower.includes('connect')) {
       return 'Network Error: Failed to connect to downstream services. Please verify your connection and try again.';
     }
     
-    // Clean up raw python dictionary format if present
     let cleaned = errorMsg;
     const dictMatch = errorMsg.match(/'message':\s*'([^']+)'/) || errorMsg.match(/"message":\s*"([^"]+)"/);
     if (dictMatch && dictMatch[1]) {
       cleaned = dictMatch[1];
     } else {
-      // Clean up bracket noise
       cleaned = cleaned.replace(/[{}[\]]/g, '').replace(/:\s*'/g, ': ').replace(/'/g, '').trim();
     }
     
@@ -172,13 +158,11 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onBack 
   };
 
   const parseInlineMarkdown = (text: string) => {
-    // Process **bold**
     const parts = text.split('**');
     const nodes = parts.map((part, i) => {
       if (i % 2 === 1) {
         return <strong key={i} className="font-bold text-white">{part}</strong>;
       }
-      // Strip any stray single asterisks from the remaining text
       return part.replace(/\*/g, '');
     });
     return nodes;
@@ -207,10 +191,9 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onBack 
     } else if (typeof text !== 'string') {
       text = String(text);
     }
-    // Auto-format inline lists generated by LLM (e.g., "(1) item one; (2) item two") into proper bullet points
     if (typeof text === 'string') {
+      text = text.replace(/\\n/g, '\n').replace(/\\-/g, '-');
       text = text.replace(/([:;.]?)\s*(?:\(\d+\)|\d+\))\s+/g, (match: string, punctuation: string) => {
-        // If it's a semicolon separating inline items, convert it to a period for cleaner list endings
         const punc = punctuation === ';' ? '.' : (punctuation || '');
         return `${punc}\n- `;
       });
@@ -219,7 +202,6 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onBack 
     return text.split('\n').map((line: string, idx: number) => {
       let trimmed = line.trim();
       
-      // Remove any leading bold markers just in case it starts a line
       trimmed = trimmed.replace(/^\*\*(.*?)\*\*/, '$1');
 
       if (trimmed.startsWith('###')) {
@@ -232,8 +214,9 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onBack 
         return <h3 key={idx} className="text-lg font-bold text-white mt-6 mb-3 font-outfit">{parseInlineMarkdown(trimmed.replace(/^#\s*/, ''))}</h3>;
       }
       if (trimmed.startsWith('-') || trimmed.startsWith('*')) {
-        // Strip ALL leading hyphens, asterisks, and spaces
-        return <li key={idx} className="ml-4 list-disc text-slate-300 text-sm py-1 leading-relaxed">{parseInlineMarkdown(trimmed.replace(/^[-*\s]+/, ''))}</li>;
+        const textContent = trimmed.replace(/^[-*\s]+/, '');
+        if (!textContent) return null;
+        return <li key={idx} className="ml-4 list-disc text-slate-300 text-sm py-1 leading-relaxed">{parseInlineMarkdown(textContent)}</li>;
       }
       if (/^\d+\./.test(trimmed)) {
         return <li key={idx} className="ml-4 list-decimal text-slate-300 text-sm py-1 leading-relaxed">{parseInlineMarkdown(trimmed.replace(/^\d+\.\s*/, ''))}</li>;
@@ -277,9 +260,7 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onBack 
             </div>
           </div>
         ) : activeSession.report ? (
-          /* Report Workspace (Solves Monolith Report W-3) */
           <div className="flex flex-col h-full gap-4 overflow-hidden">
-            {/* Warning Alert Banner for best-effort/partial reports */}
             {activeSession.status === 'failed' && (
               <div className="p-4 bg-amber-950/20 border border-amber-900/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fadeIn flex-shrink-0">
                 <div className="flex items-start gap-3">
@@ -301,7 +282,6 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onBack 
             )}
 
             <div className="flex flex-col md:flex-row h-full gap-6 items-start overflow-hidden">
-              {/* Sidebar menu within detail workspace */}
               <div className="w-full md:w-56 flex-shrink-0 flex md:flex-col overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 border-b md:border-b-0 border-slate-800 md:space-y-1">
                 {sectionsConfig.map((s) => (
                   <button
@@ -319,7 +299,6 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onBack 
                 ))}
               </div>
 
-              {/* Document display area */}
               <div className="flex-1 w-full bg-slate-950/40 border border-slate-850 rounded-xl p-6 overflow-y-auto max-h-[70vh]">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-5">
                   <h3 className="font-bold text-base text-slate-100 font-outfit uppercase tracking-wider">

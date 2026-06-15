@@ -33,6 +33,41 @@ The user can view the fully populated briefing UI and engage in an interactive f
 
 ---
 
+## Project Structure
+
+```
+zylabs-copilot/
+├── frontend/
+│   ├── src/
+│   │   ├── components/        # SessionCreate, SessionList, WorkflowProgress, ChatPanel
+│   │   ├── hooks/             # useWorkflowSocket, useSession, useChat
+│   │   ├── store/             # Zustand slices
+│   │   ├── api/               # React Query hooks over REST endpoints
+│   │   └── types/             # Shared TypeScript interfaces
+│   ├── package.json
+│   └── vite.config.ts
+├── backend/
+│   ├── api/                   # FastAPI routers: sessions, workflow, chat, websocket
+│   ├── workflow/
+│   │   ├── graph.py           # StateGraph definition
+│   │   ├── state.py           # GraphState TypedDict
+│   │   └── nodes/             # planner, researcher, analyst, qa_check, reporter
+│   ├── services/              # firecrawl.py, llm.py, websocket_manager.py
+│   ├── db/                    # SQLAlchemy models, async session, Alembic migrations
+│   ├── config.py              # Pydantic Settings
+│   ├── main.py                # FastAPI app entry point
+│   └── tests/                 # pytest test suite
+├── docs/
+│   ├── architecture.md
+│   ├── engineering-decisions.md
+│   ├── product-improvements.md
+│   └── rules.md
+├── docker-compose.yml
+├── .env.example
+└── README.md
+```
+
+---
 
 ## Quick Start
 

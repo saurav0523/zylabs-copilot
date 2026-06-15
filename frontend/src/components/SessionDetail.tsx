@@ -38,6 +38,10 @@ export const SessionDetail: React.FC = () => {
 
   // Sync activeTab to first available section if needed
   useEffect(() => {
+    useSessionStore.getState().clearWorkflowEvents();
+  }, [sessionId]);
+
+  useEffect(() => {
     if (activeSession?.report?.content) {
       const keys = Object.keys(activeSession.report.content);
       if (keys.length > 0 && !keys.includes(activeTab)) {

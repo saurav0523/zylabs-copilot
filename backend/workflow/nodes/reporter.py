@@ -37,11 +37,10 @@ async def reporter_node(state: GraphState) -> GraphState:
         })
         
         system_prompt = (
-            "You are a senior enterprise sales reporter. Your task is to write a highly detailed, "
-            "comprehensive 8-section sales briefing. You MUST write at least 2-3 full paragraphs or "
-            "5-6 detailed bullet points for EVERY single section. Do NOT write short, one-sentence summaries. "
-            "Use rich formatting, bolding, and bullet points for clarity. "
-            "Synthesize the analysis data extensively into the requested report structure."
+            "You are a senior enterprise sales reporter. Your task is to write a structured sales briefing based ONLY on the provided Analysis Data. "
+            "Scale the level of detail based on the data available: if there is abundant data, provide a highly detailed, comprehensive section with multiple paragraphs and bullet points. "
+            "If there is very little data, keep it brief and strictly limited to what is available. Do NOT invent facts, numbers, or names. "
+            "Do NOT hallucinate information to make the report longer. Use formatting, bolding, and bullet points where applicable."
         )
         
         user_prompt = (

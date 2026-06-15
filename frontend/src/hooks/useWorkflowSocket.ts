@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSessionStore } from '../store/sessionStore';
-import type { WorkflowEvent } from '../types';
+import { useQueryClient } from '@tanstack/react-query';
+import type { WorkflowEvent, Session } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const WS_URL  = import.meta.env.VITE_WS_URL  || API_URL;
@@ -19,11 +20,24 @@ export function useWorkflowSocket(sessionId: string | null) {
   // ── Hooks declared in a fixed, unconditional order ──────────────────────────
   const socketRef         = useRef<WebSocket | null>(null);
   const addWorkflowEvent  = useSessionStore((s) => s.addWorkflowEvent);
-  const updateSessionStatus = useSessionStore((s) => s.updateSessionStatus);
+  const queryClient       = useQueryClient();
   const [connected, setConnected] = useState(false);
   const reconnectTimerRef = useRef<number | null>(null);
   const reconnectDelayRef = useRef(1000);
   const manualCloseRef    = useRef(false);
+
+  const updateSessionStatus = useCallback((id: string, status: Session['status']) => {
+    // Update individual session
+    queryClient.setQueryData<Session>(['session', id], (old) => {
+      if (!old) return old;
+      return { ...old, status };
+    });
+    // Update sessions list
+    queryClient.setQueryData<Session[]>(['sessions'], (old) => {
+      if (!old) return old;
+      return old.map(s => s.id === id ? { ...s, status } : s);
+    });
+  }, [queryClient]);
 
   const connect = useCallback(() => {
     if (!sessionId) return;

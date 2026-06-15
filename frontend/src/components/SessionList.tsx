@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
-import { useSession } from '../hooks/useSession';
-import { useSessionStore } from '../store/sessionStore';
-import { RefreshCw, History, ExternalLink } from 'lucide-react';
+import React from 'react';
+import { useSessionsQuery } from '../hooks/useSession';
+import { RefreshCw, History } from 'lucide-react';
+import { SkeletonCard } from './Skeleton';
 
 interface SessionListProps {
   activeSessionId: string | null;
@@ -9,12 +9,7 @@ interface SessionListProps {
 }
 
 export const SessionList: React.FC<SessionListProps> = ({ activeSessionId, onSelect }) => {
-  const { listSessions, loading, error } = useSession();
-  const sessions = useSessionStore((state) => state.sessions);
-
-  useEffect(() => {
-    listSessions();
-  }, [listSessions]);
+  const { data: sessions = [], isLoading: loading, error, refetch } = useSessionsQuery();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -51,7 +46,7 @@ export const SessionList: React.FC<SessionListProps> = ({ activeSessionId, onSel
           <span>Research History</span>
         </div>
         <button
-          onClick={() => listSessions()}
+          onClick={() => refetch()}
           disabled={loading}
           className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-900 rounded-lg transition duration-150 disabled:opacity-50"
           title="Refresh history"
@@ -61,26 +56,17 @@ export const SessionList: React.FC<SessionListProps> = ({ activeSessionId, onSel
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
-        {loading && sessions.length === 0 ? (
+        {loading ? (
           <div className="space-y-2 p-1">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="p-3.5 border border-slate-900 bg-slate-900/40 rounded-xl space-y-2 animate-pulse">
-                <div className="flex justify-between items-center">
-                  <div className="h-4 w-24 bg-slate-800 rounded-md" />
-                  <div className="h-4 w-12 bg-slate-800/80 rounded-full" />
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="h-3 w-32 bg-slate-850 rounded-md" />
-                  <div className="h-3 w-14 bg-slate-850/80 rounded-md" />
-                </div>
-              </div>
+              <SkeletonCard key={i} />
             ))}
           </div>
-        ) : error && sessions.length === 0 ? (
+        ) : error ? (
           <div className="p-6 text-center space-y-3">
             <p className="text-xs text-red-400 font-medium">Failed to load research history</p>
             <button
-              onClick={() => listSessions()}
+              onClick={() => refetch()}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl text-[10px] font-semibold text-slate-300 transition"
             >
               <RefreshCw size={10} /> Retry

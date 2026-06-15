@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useChat } from '../hooks/useChat';
 import { Send, MessageSquare, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ChatPanelProps {
   sessionId: string;
@@ -23,36 +25,20 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ sessionId }) => {
     }
   };
 
-  const renderChatMessage = (text: string) => {
+  const renderChatMessage = (text: string, isUser: boolean) => {
     if (!text) return null;
+    const cleanedText = text
+      .replace(/\\n/g, '\n')
+      .replace(/\\-/g, '-')
+      .replace(/<br\s*\/?>/gi, '\n');
 
-    return text.split('\n').map((line, idx) => {
-      let trimmed = line.trim();
-      
-      const parts = trimmed.split('**');
-      const nodes = parts.map((part, i) => {
-        if (i % 2 === 1) {
-          return <strong key={i} className="font-bold text-white">{part}</strong>;
-        }
-        return part;
-      });
-
-      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-        // Render as bullet point
-        const content = nodes.map((n, i) => {
-          if (typeof n === 'string') return n.replace(/^[-*]\s*/, '');
-          return n;
-        });
-        return (
-          <div key={idx} className="ml-3 flex items-start gap-1.5 py-0.5">
-            <span className="text-slate-500 font-bold mt-0.5">•</span>
-            <span>{content}</span>
-          </div>
-        );
-      }
-
-      return trimmed ? <div key={idx} className="py-0.5">{nodes}</div> : <div key={idx} className="h-1.5" />;
-    });
+    return (
+      <div className={`prose prose-sm max-w-none ${isUser ? 'prose-invert prose-p:text-white prose-strong:text-white' : 'prose-invert text-slate-200'}`}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {cleanedText}
+        </ReactMarkdown>
+      </div>
+    );
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -97,13 +83,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ sessionId }) => {
                 className={`flex flex-col max-w-[85%] ${isUser ? 'ml-auto items-end' : 'mr-auto items-start'}`}
               >
                 <div
-                  className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                  className={`px-4 py-3 rounded-2xl text-sm leading-relaxed overflow-x-auto ${
                     isUser
                       ? 'bg-blue-600 text-white rounded-br-none'
                       : 'bg-slate-900 border border-slate-850 text-slate-200 rounded-bl-none'
                   }`}
                 >
-                  {renderChatMessage(msg.content)}
+                  {renderChatMessage(msg.content, isUser)}
                 </div>
                 <span className="text-[9px] text-slate-500 mt-1 px-1">
                   {formatTime(msg.created_at)}

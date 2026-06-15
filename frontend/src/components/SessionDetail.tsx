@@ -192,6 +192,7 @@ export const SessionDetail: React.FC = () => {
       text = String(text);
     }
     if (typeof text === 'string') {
+      text = text.replace(/\\n/g, '\n').replace(/\\-/g, '-');
       text = text.replace(/([:;.]?)\s*(?:\(\d+\)|\d+\))\s+/g, (match: string, punctuation: string) => {
         const punc = punctuation === ';' ? '.' : (punctuation || '');
         return `${punc}\n- `;

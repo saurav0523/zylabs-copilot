@@ -214,7 +214,9 @@ export const SessionDetail: React.FC = () => {
         return <h3 key={idx} className="text-lg font-bold text-white mt-6 mb-3 font-outfit">{parseInlineMarkdown(trimmed.replace(/^#\s*/, ''))}</h3>;
       }
       if (trimmed.startsWith('-') || trimmed.startsWith('*')) {
-        return <li key={idx} className="ml-4 list-disc text-slate-300 text-sm py-1 leading-relaxed">{parseInlineMarkdown(trimmed.replace(/^[-*\s]+/, ''))}</li>;
+        const textContent = trimmed.replace(/^[-*\s]+/, '');
+        if (!textContent) return null;
+        return <li key={idx} className="ml-4 list-disc text-slate-300 text-sm py-1 leading-relaxed">{parseInlineMarkdown(textContent)}</li>;
       }
       if (/^\d+\./.test(trimmed)) {
         return <li key={idx} className="ml-4 list-decimal text-slate-300 text-sm py-1 leading-relaxed">{parseInlineMarkdown(trimmed.replace(/^\d+\.\s*/, ''))}</li>;

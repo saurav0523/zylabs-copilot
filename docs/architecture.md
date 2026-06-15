@@ -158,7 +158,7 @@ The routing edge function `route_after_qa` evaluates state keys:
    - Sets `state["error"] = "Node failed: [error message]"`.
    - Broadcasts an `"error"` WebSocket event to notifying the user.
    - Returns the state gracefully so downstream nodes (specifically `reporter`) can still run and compile a briefing document.
-2. **Scraper Recovery (Firecrawl):** Includes custom exponential backoff (3 attempts starting at 2.0s delay, capped at 30s timeout) and caches all results in Memory (`scrape:cache:<url_hash>`) with a 24-hour TTL, avoiding repeated scraping on retries.
+2. **Scraper Recovery (Firecrawl):** Includes custom exponential backoff (3 attempts starting at 2.0s delay, capped at 30s timeout) and caches all results in Redis (`scrape:cache:<url_hash>`) with a 24-hour TTL, avoiding repeated scraping on retries.
 3. **Structured Output Recovery (LLM):** Uses `llm_service.generate_json` with fallback prompts. If structured extraction fails, it retries with a simplified prompt asking for raw JSON formatting.
 4. **Best-Effort Saving:** If the pipeline finishes with errors, the FastAPI task runner checks if a report was compiled. If a report is present, it is saved to the database. The frontend displays this report with a warning and a "Retry Workflow" button to re-trigger execution.
 
@@ -247,7 +247,7 @@ Frontend uses Tailwind CSS. Breakpoints: mobile (< 768px) collapses the sidebar;
 4. BG Task:
    planner    → emits { event:"node_started", node:"planner" }
               → emits { event:"node_done",    node:"planner", targets:[...] }
-   researcher → Firecrawl scrapes URLs (cached in Memory)
+   researcher → Firecrawl scrapes URLs (cached in Redis)
               → emits node_started / node_done
    analyst    → LLM extracts structured signals
    qa_check   → LLM scores quality → conditional route

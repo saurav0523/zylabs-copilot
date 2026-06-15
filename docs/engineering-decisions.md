@@ -21,7 +21,7 @@
 
 **Context:** Workflow execution takes 30–90 seconds. Users need real-time node-by-node progress updates.
 
-**Decision:** Use WebSockets (`wss://`) managed by `websocket_manager.py`, with connection state stored in Redis.
+**Decision:** Use WebSockets (`wss://`) managed by `websocket_manager.py`, with connection state stored in Memory.
 
 **Alternatives considered:**
 - **Server-Sent Events (SSE):** Simpler — unidirectional, HTTP/1.1 compatible, automatic reconnect. Rejected because the follow-up chat feature already requires bidirectional communication. Having one WebSocket per session covers both progress and future chat extensions cleanly.
@@ -29,7 +29,7 @@
 
 **Tradeoffs:**
 - WebSockets require managing connection lifecycle (open, ping/pong, close, reconnect on client drop).
-- Redis is required to store which connections are active and to fan out events from the background task to the socket handler — adds operational complexity.
+- Memory is required to store which connections are active and to fan out events from the background task to the socket handler — adds operational complexity.
 - Upside: instant feedback (< 100ms latency on node transitions), single persistent connection, extensible to real-time collaborative features later.
 
 ---
@@ -47,7 +47,7 @@
 
 **Tradeoffs:**
 - Firecrawl adds an external API dependency and cost per scrape.
-- Mitigated by a 24-hour Redis cache on `scrape:cache:<url_hash>` — repeated runs on the same company don't re-scrape.
+- Mitigated by a 24-hour Memory cache on `scrape:cache:<url_hash>` — repeated runs on the same company don't re-scrape.
 - Risk: Firecrawl rate limits could throttle the Researcher node on large crawls; mitigated by `MAX_PAGES_PER_SESSION` config value (default: 10).
 
 ---
@@ -57,7 +57,7 @@
 **Context:** AI agent pipelines are inherently prone to transient issues (network timeouts, LLM output formatting errors, website scrapers blocking access). We need a clear, mature recovery strategy instead of failing catastrophically.
 
 **Decision:** Implement a multi-tiered recovery and best-effort delivery architecture:
-1. **Scraper Retry & Cache:** `firecrawl_service` uses exponential backoff (3 attempts, max 30s) and writes results to a 24-hour Redis cache. If a URL scraping attempt fails but later retries, it uses the cached response, reducing external network hits.
+1. **Scraper Retry & Cache:** `firecrawl_service` uses exponential backoff (3 attempts, max 30s) and writes results to a 24-hour Memory cache. If a URL scraping attempt fails but later retries, it uses the cached response, reducing external network hits.
 2. **LLM Output Fallback:** `llm_service.generate_json` wraps LLM prompts. If parsing fails, it retries with a fallback prompt requesting simple, raw JSON formatting without markdown blocks.
 3. **Graph Level try/except:** If a node raises an exception, the node catches it, sets `state["error"] = ...`, and returns the state. The graph topology continues to run and ultimately triggers the `reporter` node to build a best-effort compilation using whatever data is present.
 4. **Best-Effort Saving:** The FastAPI task runner commits reports to the database even if the session ended with errors (`FAILED`), ensuring the user retains access to partial findings.
@@ -71,7 +71,7 @@
 ## Top Technical Debt Items
 
 **TD-01 — Background tasks run in-process (FastAPI `BackgroundTasks`).**
-For the MVP this is fine, but long-running workflows (> 60s) may time out under load. The proper fix is a dedicated task queue (Celery + Redis or ARQ). Migration path is clean — the `workflow/graph.py` and `websocket_manager.py` are already decoupled from the HTTP request lifecycle.
+For the MVP this is fine, but long-running workflows (> 60s) may time out under load. The proper fix is a dedicated task queue (Celery + Memory or ARQ). Migration path is clean — the `workflow/graph.py` and `websocket_manager.py` are already decoupled from the HTTP request lifecycle.
 
 **TD-02 — No LangGraph checkpointing.**
 LangGraph supports `MemorySaver` and `PostgresSaver` checkpointers for mid-graph state persistence and resumability. Currently, if the server restarts mid-workflow, the session is stuck in `running` status. Fix: integrate `PostgresSaver` using the existing DB connection.
@@ -80,7 +80,7 @@ LangGraph supports `MemorySaver` and `PostgresSaver` checkpointers for mid-graph
 The follow-up chat sends the entire report as context to the LLM. For large reports this wastes tokens. Should be replaced with a retrieval step (embed report sections, retrieve top-k relevant sections per question).
 
 **TD-04 — No rate limiting on the API.**
-`POST /sessions/:id/run` can be called multiple times in parallel per session. Should add Redis-backed rate limiting per IP and per session.
+`POST /sessions/:id/run` can be called multiple times in parallel per session. Should add Memory-backed rate limiting per IP and per session.
 
 **TD-05 — Frontend has no offline / reconnect handling.**
 If the WebSocket drops mid-workflow, the progress UI freezes. Should implement auto-reconnect with exponential backoff and re-fetch current workflow state on reconnect.

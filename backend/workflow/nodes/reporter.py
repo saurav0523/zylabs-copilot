@@ -37,9 +37,11 @@ async def reporter_node(state: GraphState) -> GraphState:
         })
         
         system_prompt = (
-            "You are a sales reporter. Your task is to write a highly polished, professional "
-            "8-section sales briefing. Use formatting, bullet points, and markdown for clarity. "
-            "Synthesize the analysis data into the requested report structure."
+            "You are a senior enterprise sales reporter. Your task is to write a highly detailed, "
+            "comprehensive 8-section sales briefing. You MUST write at least 2-3 full paragraphs or "
+            "5-6 detailed bullet points for EVERY single section. Do NOT write short, one-sentence summaries. "
+            "Use rich formatting, bolding, and bullet points for clarity. "
+            "Synthesize the analysis data extensively into the requested report structure."
         )
         
         user_prompt = (

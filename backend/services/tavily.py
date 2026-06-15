@@ -1,9 +1,9 @@
 import hashlib
 import json
 import asyncio
+import time
 from typing import Dict, Any, List, Optional
 import httpx
-import redis.asyncio as aioredis
 import structlog
 from backend.config import settings
 
@@ -12,7 +12,7 @@ logger = structlog.get_logger()
 class TavilyService:
     def __init__(self) -> None:
         self.base_url = "https://api.tavily.com"
-        self.redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        self._cache: Dict[str, Any] = {}
 
     def _get_api_key(self) -> Optional[str]:
         # Return explicit Tavily key first, then fallback to Firecrawl key if it starts with tvly-
@@ -22,25 +22,28 @@ class TavilyService:
             return settings.FIRECRAWL_API_KEY.strip()
         return None
 
-    def _get_cache_key(self, query: str) -> str:
-        query_hash = hashlib.md5(query.encode("utf-8")).hexdigest()
-        return f"tavily:cache:{query_hash}"
-
     async def search(self, query: str, max_results: int = 5) -> List[Dict[str, Any]]:
-        """Performs search on Tavily. Uses Redis caching, timeout, and simple retries."""
+        """Performs search on Tavily. Uses in-memory caching, timeout, and simple retries."""
         api_key = self._get_api_key()
         if not api_key:
             logger.error("Tavily API key is not configured")
             return []
 
-        cache_key = self._get_cache_key(query)
+        cache_key = f"tavily:v1:{query}"
+        
+        # 1. Check Memory Cache
         try:
-            cached_val = await self.redis_client.get(cache_key)
+            cached_val = self._cache.get(cache_key)
             if cached_val:
-                logger.info("Cache hit for Tavily query", query=query)
-                return json.loads(cached_val)
+                # Check expiration
+                data, expires_at = cached_val
+                if time.time() < expires_at:
+                    logger.info("Cache hit for Tavily", query=query)
+                    return data
+                else:
+                    del self._cache[cache_key]
         except Exception as e:
-            logger.error("Error reading from Redis cache for Tavily", error=str(e), query=query)
+            logger.error("Error reading from Tavily cache", error=str(e), query=query)
 
         # Execute search with simple retry
         retries = 2
@@ -64,11 +67,11 @@ class TavilyService:
                         res_json = response.json()
                         results = res_json.get("results", [])
                         
-                        # Cache in Redis for 24 hours
+                        # Cache in Memory for 24 hours
                         try:
-                            await self.redis_client.setex(cache_key, 86400, json.dumps(results))
+                            self._cache[cache_key] = (results, time.time() + 86400)
                         except Exception as cache_err:
-                            logger.error("Failed to write to Redis cache for Tavily", error=str(cache_err))
+                            logger.error("Failed to write to Tavily cache", error=str(cache_err))
                         return results
                     else:
                         logger.warn("Tavily API error status", status_code=response.status_code, text=response.text)

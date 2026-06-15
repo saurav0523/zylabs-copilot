@@ -28,7 +28,11 @@ export function useCreateSessionMutation() {
         objective: variables.objective 
       }),
     onSuccess: (newSession) => {
-      // Invalidate the sessions list so it refetches
+      // Optimistically append to the sessions list so it appears instantly
+      queryClient.setQueryData<Session[]>(['sessions'], (old) => {
+        return old ? [newSession, ...old] : [newSession];
+      });
+      // Invalidate the sessions list so it refetches in the background
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       // Pre-populate the individual session cache
       queryClient.setQueryData(['session', newSession.id], newSession);

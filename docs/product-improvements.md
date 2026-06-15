@@ -72,7 +72,7 @@ Add a "Push to Salesforce / HubSpot" button on the report page. Map report secti
 
 **Cost:** LLM API costs scale linearly with sessions. The Reporter node sends ~10,000–20,000 tokens per run (scraped content + analysis + report generation). At $15/M tokens, 10,000 sessions/month = $1,500–3,000/month in LLM costs alone, before Firecrawl costs. Mitigation: cache Firecrawl responses aggressively; add a "lite mode" that skips deep crawl and uses only the company homepage.
 
-**Scaling:** The current in-process BackgroundTask approach works for < 100 concurrent sessions. Above that, long-running workflows will exhaust FastAPI worker threads. Mitigation path: move to Celery + Redis task queue (already planned as TD-01 in `engineering-decisions.md`).
+**Scaling:** The current in-process BackgroundTask approach works for < 100 concurrent sessions. Above that, long-running workflows will exhaust FastAPI worker threads. Mitigation path: move to Celery + Memory task queue (already planned as TD-01 in `engineering-decisions.md`).
 
 **Reliability:** The system has three external dependencies that can fail independently: Firecrawl, the LLM provider, and PostgreSQL. A Firecrawl outage silently produces empty research notes; an LLM outage kills the Analysis and Reporter nodes. Mitigation: circuit breakers on both external clients, graceful degradation (partial reports with "unavailable" placeholders), and a status page that reflects real-time dependency health.
 

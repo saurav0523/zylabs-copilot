@@ -1,9 +1,9 @@
 import hashlib
 import json
 import asyncio
+import time
 from typing import Dict, Any, List, Optional
 import httpx
-import redis.asyncio as aioredis
 import structlog
 from backend.config import settings
 
@@ -13,7 +13,7 @@ class FirecrawlService:
     def __init__(self) -> None:
         self.api_key = settings.FIRECRAWL_API_KEY
         self.base_url = "https://api.firecrawl.dev/v1"
-        self.redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        self._cache: Dict[str, Any] = {}
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -24,19 +24,26 @@ class FirecrawlService:
         return f"scrape:cache:{url_hash}"
 
     async def scrape_url(self, url: str) -> Optional[Dict[str, Any]]:
-        """Scrapes a URL. Uses Redis caching, timeout, and exponential backoff retries."""
+        """Scrapes a URL. Uses Memory caching, timeout, and exponential backoff retries."""
         if not self.api_key or self.api_key.startswith("fc-your") or not self.api_key.strip():
             logger.error("Firecrawl API key is not configured")
             raise ValueError("Firecrawl API key is not configured. Please add FIRECRAWL_API_KEY to your .env file.")
 
-        cache_key = self._get_cache_key(url)
+        cache_key = f"firecrawl:v1:{url}"
+        
+        # 1. Check Memory Cache
         try:
-            cached_val = await self.redis_client.get(cache_key)
+            cached_val = self._cache.get(cache_key)
             if cached_val:
-                logger.info("Cache hit for scrape url", url=url)
-                return json.loads(cached_val)
+                # Check expiration (we store a tuple of (data, expires_at))
+                data, expires_at = cached_val
+                if time.time() < expires_at:
+                    logger.info("Cache hit for Firecrawl", url=url)
+                    return data
+                else:
+                    del self._cache[cache_key]
         except Exception as e:
-            logger.error("Error reading from Redis cache", error=str(e), url=url)
+            logger.error("Error reading from Firecrawl cache", error=str(e), url=url)
 
         # Scrape with exponential backoff (3 retries, max 30s total)
         retries = 3
@@ -56,11 +63,11 @@ class FirecrawlService:
                         res_json = response.json()
                         if res_json.get("success") and "data" in res_json:
                             data = res_json["data"]
-                            # Cache in Redis for 24 hours
+                            # Cache in Memory for 24 hours
                             try:
-                                await self.redis_client.setex(cache_key, 86400, json.dumps(data))
+                                self._cache[cache_key] = (data, time.time() + 86400)
                             except Exception as cache_err:
-                                logger.error("Failed to write to Redis cache", error=str(cache_err))
+                                logger.error("Failed to write to Firecrawl cache", error=str(cache_err))
                             return data
                         else:
                             logger.warn("Firecrawl scrape API returned unsuccessful response", payload=res_json, url=url)

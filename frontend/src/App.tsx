@@ -20,6 +20,34 @@ export const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
 
+  // Chat resizer state
+  const [chatWidth, setChatWidth] = useState(384);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const startResizing = (e: React.MouseEvent) => {
+    setIsResizing(true);
+    e.preventDefault();
+  };
+
+  React.useEffect(() => {
+    if (!isResizing) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = window.innerWidth - e.clientX;
+      if (newWidth > 250 && newWidth < 800) {
+        setChatWidth(newWidth);
+      }
+    };
+    const handleMouseUp = () => setIsResizing(false);
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
+
   const handleSelectSession = (id: string) => {
     navigate(`/session/${id}`);
     setSidebarOpen(false);
@@ -168,9 +196,19 @@ export const App: React.FC = () => {
         </main>
       </div>
 
+      {/* Resizer Handle */}
+      {activeSession?.status === 'done' && (
+        <div 
+          onMouseDown={startResizing}
+          className="hidden lg:block w-1 cursor-col-resize hover:bg-blue-500/50 bg-slate-800/50 z-40 transition-colors"
+        />
+      )}
+
       {/* 6. Follow-up Q&A Chat Panel (Right) */}
       {activeSession?.status === 'done' && (
-        <div className={`fixed inset-y-0 right-0 transform lg:relative lg:translate-x-0 transition-transform duration-200 ease-in-out z-30 w-80 lg:w-96 flex-shrink-0 ${
+        <div 
+          style={{ width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${chatWidth}px` : '320px' }}
+          className={`fixed inset-y-0 right-0 transform lg:relative lg:translate-x-0 transition-transform duration-200 ease-in-out z-30 flex-shrink-0 bg-slate-950 ${
           chatOpen ? 'translate-x-0' : 'translate-x-full'
         }`}>
           <div className="h-full pt-16 lg:pt-0">

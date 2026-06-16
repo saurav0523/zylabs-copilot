@@ -1,7 +1,5 @@
 # Engineering Decisions
 
----
-
 ## Decision 1 — LangGraph StateGraph with explicit topology instead of an agent loop
 
 When I started designing the workflow, the obvious first instinct was a ReAct-style agent where the LLM decides what tool to call next. It's the default pattern and it works fine for open-ended tasks. But this isn't an open-ended task — it's a fixed pipeline: plan, scrape, analyze, check quality, generate report. Every run should follow the same steps in the same order.
@@ -15,8 +13,6 @@ The downside is it's more rigid — if I want to add a new research step later, 
 **Alternatives I considered:**
 - ReAct agent loop — rejected, too much LLM autonomy over something that needs to be predictable
 - Simple LangChain sequential chain — rejected, no conditional routing, no retry loop
-
----
 
 ## Decision 2 — WebSockets over SSE for streaming workflow progress
 
@@ -32,8 +28,6 @@ WebSocket won. The tradeoff is I had to write connection lifecycle management �
 
 **One thing I'd fix later:** The current WebSocket state lives in-process (Python dict). If the app ever scales to multiple processes, events from one worker won't reach connections on another. The fix is Redis pub/sub fan-out, but for a single-process MVP this isn't a real problem yet.
 
----
-
 ## Decision 3 — Firecrawl for web scraping instead of raw HTTP + BeautifulSoup
 
 The Researcher node needs actual page content — not search snippets, not summaries, actual text. I need to hit a company's About page, their blog, their LinkedIn, and pull clean readable text out of it.
@@ -46,8 +40,6 @@ The main risk with Firecrawl is external dependency — if they're down, the Res
 
 **What I'd do with more time:** Add a fallback scraper. If Firecrawl fails for a URL, try a direct httpx fetch and strip HTML with BeautifulSoup. It won't handle JS-heavy pages, but it's better than returning nothing.
 
----
-
 ## Decision 4 — In-process FastAPI BackgroundTasks instead of a proper task queue
 
 This was the pragmatic call I'm least proud of but most comfortable defending for an MVP.
@@ -57,8 +49,6 @@ The workflow runs for 30-90 seconds. FastAPI's `BackgroundTasks` runs it in the 
 The production-correct answer is Celery + Redis or ARQ — a separate worker process that picks up jobs from a queue, retries failed jobs, and doesn't tie up web server threads. That's the right architecture and it's in the tech debt list.
 
 But setting up Celery for a 3-day assignment felt like over-engineering the infrastructure at the expense of the actual product features. The code is already structured so `_run_workflow()` is a standalone async function with no FastAPI dependencies — swapping it to a Celery task later is a clean migration, not a rewrite.
-
----
 
 ## Top Technical Debt Items
 
@@ -72,8 +62,6 @@ But setting up Celery for a 3-day assignment felt like over-engineering the infr
 
 **TD-05 — WebSocket state is in-process.** Covered in Decision 2 above. Single process is fine for now.
 
----
-
 ## Biggest Technical Risk
 
 Firecrawl returning empty or garbage content for the target company's website. This happens more than you'd expect — paywalls, login walls, JS-heavy SPAs that take 5 seconds to render, bot detection that returns a 403. When this happens, the Researcher node gets blank markdown, the Analyst has nothing to work with, the QA score tanks, and the retries also return blank content.
@@ -81,8 +69,6 @@ Firecrawl returning empty or garbage content for the target company's website. T
 The Planner node helps here — it's prompted to generate 6-8 diverse URLs (not just the homepage) so one blocked URL doesn't sink the whole run. But if the company has heavy bot protection across their entire domain, the report will be thin regardless.
 
 Longer-term mitigation: hybrid approach combining Firecrawl (full-page content) with Tavily (search-based discovery) so there's always a fallback content path.
-
----
 
 ## What I'd Improve with 2 More Weeks
 

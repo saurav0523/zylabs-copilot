@@ -6,6 +6,7 @@ export function useSessionsQuery() {
   return useQuery({
     queryKey: ['sessions'],
     queryFn: () => api.listSessions(),
+    staleTime: 3000,
   });
 }
 
@@ -14,6 +15,7 @@ export function useSessionQuery(sessionId: string | null) {
     queryKey: ['session', sessionId],
     queryFn: () => sessionId ? api.getSession(sessionId) : Promise.reject('No session ID'),
     enabled: !!sessionId,
+    staleTime: 3000,
   });
 }
 
@@ -78,6 +80,23 @@ export function useRunSessionMutation() {
       if (context?.previousSessions) {
         queryClient.setQueryData(['sessions'], context.previousSessions);
       }
+    },
+  });
+}
+
+export function useDeleteSessionMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (sessionId: string) => api.deleteSession(sessionId),
+    onSuccess: (_, sessionId) => {
+      // Remove from list optimistically or just invalidate
+      queryClient.setQueryData<Session[]>(['sessions'], (old) => {
+        return old ? old.filter((s) => s.id !== sessionId) : [];
+      });
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      // Remove specific session cache
+      queryClient.removeQueries({ queryKey: ['session', sessionId] });
     },
   });
 }

@@ -80,4 +80,11 @@ export const api = {
     });
     return handleResponse<{ reply: string; sources: string[] }>(response);
   },
+
+  async deleteSession(sessionId: string): Promise<{ status: string }> {
+    const response = await apiFetch(`${API_URL}/api/sessions/${sessionId}`, {
+      method: 'DELETE',
+    });
+    return handleResponse<{ status: string }>(response);
+  },
 };

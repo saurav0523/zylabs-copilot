@@ -92,7 +92,7 @@ async def list_sessions(limit: int = 20, offset: int = 0, db: AsyncSession = Dep
     """Retrieves a list of all research sessions, ordered by created_at desc."""
     logger.info("Listing sessions", limit=limit, offset=offset)
     
-    stmt = select(Session).order_by(desc(Session.created_at)).limit(limit).offset(offset)
+    stmt = select(Session).where(Session.is_deleted == False).order_by(desc(Session.created_at)).limit(limit).offset(offset)
     result = await db.execute(stmt)
     sessions = result.scalars().all()
     
@@ -123,7 +123,7 @@ async def get_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_db))
     result = await db.execute(stmt)
     s = result.scalar_one_or_none()
     
-    if not s:
+    if not s or s.is_deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Session with ID {session_id} not found."
@@ -166,3 +166,23 @@ async def get_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_db))
     }
     
     return envelope(data)
+
+@router.delete("/sessions/{session_id}", status_code=status.HTTP_200_OK)
+async def delete_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
+    """Soft deletes a research session."""
+    logger.info("Deleting session", session_id=session_id)
+    
+    stmt = select(Session).where(Session.id == session_id)
+    result = await db.execute(stmt)
+    s = result.scalar_one_or_none()
+    
+    if not s or s.is_deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session with ID {session_id} not found."
+        )
+        
+    s.is_deleted = True
+    await db.commit()
+    
+    return envelope({"status": "success", "message": "Session deleted successfully."})

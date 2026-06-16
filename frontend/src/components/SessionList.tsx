@@ -1,6 +1,6 @@
 import React from 'react';
-import { useSessionsQuery } from '../hooks/useSession';
-import { RefreshCw, History } from 'lucide-react';
+import { useSessionsQuery, useDeleteSessionMutation } from '../hooks/useSession';
+import { RefreshCw, History, Trash2 } from 'lucide-react';
 import { SkeletonCard } from './Skeleton';
 
 interface SessionListProps {
@@ -10,6 +10,20 @@ interface SessionListProps {
 
 export const SessionList: React.FC<SessionListProps> = ({ activeSessionId, onSelect }) => {
   const { data: sessions = [], isLoading: loading, error, refetch } = useSessionsQuery();
+  const deleteMutation = useDeleteSessionMutation();
+
+  const handleDelete = (e: React.MouseEvent, sessionId: string, companyName: string) => {
+    e.stopPropagation();
+    if (window.confirm(`Are you sure you want to delete the session for "${companyName}"?`)) {
+      deleteMutation.mutate(sessionId, {
+        onSuccess: () => {
+          if (activeSessionId === sessionId) {
+            onSelect(''); // Clear active session if deleted
+          }
+        }
+      });
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -80,16 +94,16 @@ export const SessionList: React.FC<SessionListProps> = ({ activeSessionId, onSel
           sessions.map((s) => {
             const isActive = s.id === activeSessionId;
             return (
-              <button
+              <div
                 key={s.id}
                 onClick={() => onSelect(s.id)}
-                className={`w-full text-left p-3.5 rounded-xl transition duration-150 flex flex-col gap-1.5 border ${
+                className={`group relative w-full text-left p-3.5 rounded-xl cursor-pointer transition duration-150 flex flex-col gap-1.5 border ${
                   isActive
                     ? 'bg-slate-900 border-blue-600/50 shadow-md shadow-blue-500/5'
                     : 'border-transparent hover:bg-slate-900/60'
                 }`}
               >
-                <div className="flex items-center justify-between w-full">
+                <div className="flex items-center justify-between w-full pr-6">
                   <span className="font-medium text-sm text-slate-200 truncate pr-2 font-outfit">
                     {s.company_name}
                   </span>
@@ -100,11 +114,20 @@ export const SessionList: React.FC<SessionListProps> = ({ activeSessionId, onSel
                      'Pending'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-500 w-full">
+                <div className="flex items-center justify-between text-[11px] text-slate-500 w-full pr-6">
                   <span className="truncate max-w-[150px]">{s.website.replace(/^https?:\/\/(www\.)?/, '')}</span>
                   <span>{formatDate(s.created_at)}</span>
                 </div>
-              </button>
+                
+                <button
+                  onClick={(e) => handleDelete(e, s.id, s.company_name)}
+                  disabled={deleteMutation.isPending}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-lg opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
+                  title="Delete session"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             );
           })
         )}

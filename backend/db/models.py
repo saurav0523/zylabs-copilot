@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
-from sqlalchemy import String, Text, Float, DateTime, ForeignKey, Enum as SQLEnum
+from sqlalchemy import String, Text, Float, DateTime, ForeignKey, Enum as SQLEnum, Boolean, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
 import enum
@@ -34,6 +34,7 @@ class Session(Base):
         default=SessionStatus.PENDING,
         nullable=False
     )
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"), nullable=False)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=utc_now, nullable=True)

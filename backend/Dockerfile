@@ -13,7 +13,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Create the backend directory structure so imports like `from backend.db...` work
+COPY . /app/backend
+
+# Switch working directory to where alembic.ini and main.py live
+WORKDIR /app/backend
+
+# Tell Python that the root module directory is /app
+ENV PYTHONPATH=/app
 
 EXPOSE 8000
 

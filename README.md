@@ -2,7 +2,7 @@
 
 > A production-grade AI sales research assistant powered by LangGraph, FastAPI, React, Firecrawl, and PostgreSQL.
 
-## 🎯 What it does
+##  What it does
 
 Given a company name, website, and a meeting objective, the copilot executes a deterministic, multi-agent AI pipeline to compile a comprehensive executive briefing.
 
@@ -15,7 +15,7 @@ Given a company name, website, and a meeting objective, the copilot executes a d
 
 The user can view the fully populated briefing UI and engage in an interactive follow-up chat with the AI contextually grounded in the report data.
 
-## 🏗️ Architecture Stack
+##  Architecture Stack
 
 | Layer | Technology |
 |---|---|

@@ -2,8 +2,6 @@
 
 > A production-grade AI sales research assistant powered by LangGraph, FastAPI, React, Firecrawl, and PostgreSQL.
 
----
-
 ## 🎯 What it does
 
 Given a company name, website, and a meeting objective, the copilot executes a deterministic, multi-agent AI pipeline to compile a comprehensive executive briefing.
@@ -17,8 +15,6 @@ Given a company name, website, and a meeting objective, the copilot executes a d
 
 The user can view the fully populated briefing UI and engage in an interactive follow-up chat with the AI contextually grounded in the report data.
 
----
-
 ## 🏗️ Architecture Stack
 
 | Layer | Technology |
@@ -30,8 +26,6 @@ The user can view the fully populated briefing UI and engage in an interactive f
 | App State / Data | PostgreSQL (Neon) |
 | Cache / WS State | In-Memory (Dict) - Zero Config |
 | Container | Docker + Docker Compose |
-
----
 
 ## Project Structure
 
@@ -67,14 +61,12 @@ zylabs-copilot/
 └── README.md
 ```
 
----
-
 ## Quick Start
 
 ### Prerequisites
 - Docker + Docker Compose
 - Firecrawl API key ([firecrawl.dev](https://firecrawl.dev))
-- Anthropic or OpenAI API key
+- OpenRouter API key ([openrouter.ai](https://openrouter.ai)) — free tier available
 
 ### Setup
 
@@ -108,14 +100,13 @@ npm install
 npm run dev
 ```
 
----
-
 ## Environment Variables
 
 Copy `.env.example` and fill in values:
 
 ```env
-
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/zylabs
+REDIS_URL=redis://localhost:6379/0
 
 FIRECRAWL_API_KEY=fc-...
 ANTHROPIC_API_KEY=sk-ant-...   # or OPENAI_API_KEY=sk-...
@@ -126,8 +117,6 @@ QA_QUALITY_THRESHOLD=0.7
 MAX_PAGES_PER_SESSION=10
 ```
 
----
-
 ## Running Tests
 
 ```bash
@@ -137,8 +126,6 @@ pytest --cov=. --cov-report=term-missing
 cd frontend
 npm run test
 ```
-
----
 
 ## Key Design Decisions
 
@@ -159,8 +146,6 @@ See [rules.md](docs/rules.md) before writing any code. All rules are mandatory a
 
 See [product-improvements.md](docs/product-improvements.md) for identified weaknesses, prioritised improvements, success metrics, and the 90-day roadmap.
 
----
-
 ## API Reference (summary)
 
 | Method | Path | Description |
@@ -171,8 +156,6 @@ See [product-improvements.md](docs/product-improvements.md) for identified weakn
 | POST | `/api/sessions/:id/run` | Trigger LangGraph workflow |
 | POST | `/api/sessions/:id/chat` | Follow-up chat on report |
 | WS | `/ws/session/:id` | Real-time workflow progress stream |
-
----
 
 ## WebSocket Event Schema
 

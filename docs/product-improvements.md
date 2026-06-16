@@ -1,7 +1,5 @@
 # Product Improvements
 
----
-
 ## 1. Five Weaknesses in the Current Design
 
 **Reports go stale immediately.** Once a report is generated it's frozen. A company can announce a funding round, lose their CEO, or ship a major product update the next morning — and the report still shows yesterday's picture. There's no refresh, no staleness indicator, nothing. For a sales context where timing is everything, this is a real problem.
@@ -13,8 +11,6 @@
 **It's completely disconnected from existing workflows.** The people who need this tool already have Salesforce open, Google Calendar reminders firing, Slack threads running. After reading the report they have to manually copy insights into their CRM or their meeting notes. That manual step kills adoption — if it doesn't save time end-to-end, reps won't build a habit around it.
 
 **No memory between sessions.** Research the same company twice and the second run starts completely from scratch. There's no "last time you looked at Acme, the QA score was low because their website was blocked" or "you previously noted they were hiring heavily in APAC." Account management involves returning to the same companies repeatedly, and right now each visit is a cold start.
-
----
 
 ## 2. Top 3 Improvements to Build Next
 
@@ -30,8 +26,6 @@ A "Refresh" button per section that re-runs only the Researcher and Analyst node
 
 A "Push to Salesforce" button that maps report sections to CRM fields automatically: Company Overview → Account Description, Business Signals → Activity log entry, Discovery Questions → Next Steps tasks. This turns the tool from something you use in isolation into something that fits into the workflow that already exists. That's where retention lives.
 
----
-
 ## 3. Who Buys It, Who Uses It, Why They Pay
 
 The buyer is a VP of Sales or Head of Revenue at a B2B company with a sales team of 10-200 people. They're paying for rep productivity tools constantly — this fits the same budget as Gong, Outreach, or Clari. What gets their attention is time saved per rep per week, not features.
@@ -39,8 +33,6 @@ The buyer is a VP of Sales or Head of Revenue at a B2B company with a sales team
 The users are AEs and SDRs who currently spend 20-40 minutes Googling before an important call, pulling from 5 different tabs, and still walking in under-prepared. Half of them skip the research entirely when the calendar is full.
 
 Why they pay: the math is straightforward. A team of 10 AEs doing 5 research sessions per week each saves roughly 25 hours of research time weekly. At a blended rep cost of $80/hour, that's $2000/week in recovered time — way more than a $300/month subscription. The ROI conversation is easy.
-
----
 
 ## 4. Success Metrics
 
@@ -54,8 +46,6 @@ Workflow completion rate (successful runs / total runs) — target 95%+. Every f
 
 Time saved per session self-reported via a quick post-report prompt — target 20+ minutes. If users don't feel the time save, they'll stop using it.
 
----
-
 ## 5. Four-Week AI Roadmap
 
 **Week 1** — Structured meeting context intake. Replace the freeform objective field with 3 targeted dropdowns + a short free text box. Update all LLM prompts to consume structured context. Measure report quality score improvement.
@@ -66,8 +56,6 @@ Time saved per session self-reported via a quick post-report prompt — target 2
 
 **Week 4** — Account memory layer. Embed past report sections into pgvector. Pull relevant context from previous sessions on the same company and inject it into new runs. Test with power users who research the same accounts repeatedly.
 
----
-
 ## 6. Biggest Cost, Scaling, and Reliability Risks
 
 **Cost** — LLM API spend scales directly with usage. Each research session makes 4-5 LLM calls with large context windows (scraped content is long). At current token prices, 10,000 sessions/month gets expensive fast. The immediate mitigation is aggressive Firecrawl caching (already implemented) and adding a "quick mode" that only scrapes the homepage instead of 8-10 URLs.
@@ -76,23 +64,17 @@ Time saved per session self-reported via a quick post-report prompt — target 2
 
 **Reliability** — There are three external dependencies that can each fail independently: Firecrawl, the LLM provider, and the database. A Firecrawl outage during a sales team's busy morning would surface as a wave of failed reports with no clear user message. Need circuit breakers, better error messaging, and a status page showing dependency health.
 
----
-
 ## 7. Feature I'd Remove
 
 The freeform research objective text field — not the concept, just the current implementation.
 
 It creates false confidence. Users think their objective is being "understood" by the AI, but a vague objective like "sales call" contributes almost nothing to the output quality. It's input theater. Replacing it with 3 structured dropdowns gives the AI genuinely useful context and takes the cognitive burden off the user. The field as-is is worse than nothing because it implies personalization that isn't really happening.
 
----
-
 ## 8. Feature I'd Add
 
 A "Red Flags" section in the report that's separate from risks and challenges.
 
 Risks and challenges are things you already know to look for. Red flags are things you might be inclined to ignore — recent executive departures, Glassdoor patterns suggesting internal chaos, product reviews mentioning support issues, funding rounds that are suspiciously small or haven't happened in 3 years. Sales reps are optimistic by nature and often rationalize away signals that a deal is going to be hard. A dedicated section that explicitly surfaces red flags makes the tool honest in a way that's genuinely valuable for rep productivity, not just for closing deals faster but for closing the *right* deals faster.
-
----
 
 ## 9. First 90-Day Roadmap
 
@@ -101,8 +83,6 @@ Risks and challenges are things you already know to look for. Red flags are thin
 **Days 31-60 — Fix the biggest friction points.** Based on what the first month shows, ship structured context intake (almost certainly the highest impact change based on the generic-output problem) and fix whatever completion rate issues surfaced in production. Also add the thumbs up/down rating to start collecting quality signal at scale.
 
 **Days 61-90 — Start the monetization motion.** Introduce a paid tier. Ship CRM export as a paid feature. Start having commercial conversations with the companies whose reps are using it most. Target: at least 3 teams on paid plans by day 90, and a clear enough retention pattern that you can model growth.
-
----
 
 ## 10. What I'd Change First
 

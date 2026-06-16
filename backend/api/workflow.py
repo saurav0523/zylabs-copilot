@@ -164,6 +164,11 @@ async def run_session_workflow(
             detail="Session workflow is already running."
         )
         
+    # Synchronously update status to prevent race conditions with frontend refetching
+    session.status = SessionStatus.RUNNING
+    session.error_message = None
+    await db.commit()
+        
     # Queue execution background task
     background_tasks.add_task(execute_workflow_task, session_id)
     

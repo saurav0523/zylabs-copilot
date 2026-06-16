@@ -17,8 +17,6 @@ LangGraph Workflow Engine
 PostgreSQL  │  Memory  │  Local file cache
 ```
 
----
-
 ## Layer Breakdown
 
 ### 1. Frontend — React + Vite + TypeScript
@@ -42,8 +40,6 @@ PostgreSQL  │  Memory  │  Local file cache
 2. Backend emits `{ event: "node_started" | "node_done" | "workflow_complete" | "error", node, payload }`.
 3. Frontend renders a step-by-step progress UI from these events.
 4. Socket closes automatically on `workflow_complete` or `error`.
-
----
 
 ### 2. Backend — Python + FastAPI
 
@@ -207,8 +203,6 @@ created_at    TIMESTAMPTZ
 | `workflow:state:<session_id>` | 1 hour | In-progress LangGraph state snapshot |
 | `scrape:cache:<url_hash>` | 24 hours | Firecrawl response cache (avoid re-scraping) |
 
----
-
 ## Cross-Cutting Concerns
 
 ### Configuration (`config.py`)
@@ -234,8 +228,6 @@ Structured JSON logs via `structlog`. Every log entry carries `session_id`, `nod
 
 ### Responsive design
 Frontend uses Tailwind CSS. Breakpoints: mobile (< 768px) collapses the sidebar; tablet (768–1024px) single-column; desktop (> 1024px) split-pane (session list + detail).
-
----
 
 ## Data Flow — End to End
 

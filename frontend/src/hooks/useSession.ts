@@ -6,6 +6,7 @@ export function useSessionsQuery() {
   return useQuery({
     queryKey: ['sessions'],
     queryFn: () => api.listSessions(),
+    staleTime: 3000,
   });
 }
 
@@ -14,6 +15,7 @@ export function useSessionQuery(sessionId: string | null) {
     queryKey: ['session', sessionId],
     queryFn: () => sessionId ? api.getSession(sessionId) : Promise.reject('No session ID'),
     enabled: !!sessionId,
+    staleTime: 3000,
   });
 }
 
